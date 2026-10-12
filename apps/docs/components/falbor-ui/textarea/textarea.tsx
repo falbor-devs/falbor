@@ -1,0 +1,38 @@
+import * as React from 'react'
+import { cva, type VariantProps } from 'class-variance-authority'
+import { cn } from '../../lib/cn'
+
+/** `[letter-spacing:inherit]` — see the note on `INPUT_CLASS`; keep the two in step. */
+const textareaVariants = cva(
+  'flex w-full touch-manipulation rounded-sm border border-[var(--border-1)] bg-[var(--surface-5)] px-2 py-2 font-sans text-sm text-[var(--text-primary)] [letter-spacing:inherit] transition-colors placeholder:text-[var(--text-muted)] outline-hidden resize-none overflow-auto disabled:cursor-not-allowed disabled:opacity-50',
+  {
+    variants: {
+      variant: {
+        default: '',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+)
+
+interface TextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+    VariantProps<typeof textareaVariants> {}
+
+/**
+ * Minimal textarea component matching the user-input styling.
+ * Features a resize handle in the bottom right corner.
+ */
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, variant, ...props }, ref) => {
+    return (
+      <textarea className={cn(textareaVariants({ variant }), className)} ref={ref} {...props} />
+    )
+  }
+)
+
+Textarea.displayName = 'Textarea'
+
+export { Textarea }

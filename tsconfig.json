@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "~/*": [
+        "apps/falbor/app/*"
+      ]
+    }
+  },
+  "files": [],
+  "references": [
+    { "path": "./apps/falbor" }
+  ]
+}

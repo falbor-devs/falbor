@@ -1,0 +1,243 @@
+:root,
+:root[data-theme='light'] {
+  --falbor-elements-borderColor: theme('colors.alpha.gray.10');
+  --falbor-elements-borderColorActive: theme('colors.accent.600');
+
+  --falbor-elements-bg-depth-1: theme('colors.white');
+  --falbor-elements-bg-depth-2: theme('colors.gray.50');
+  --falbor-elements-bg-depth-3: theme('colors.gray.200');
+  --falbor-elements-bg-depth-4: theme('colors.alpha.gray.5');
+
+  --falbor-elements-textPrimary: theme('colors.gray.950');
+  --falbor-elements-textSecondary: theme('colors.gray.600');
+  --falbor-elements-textTertiary: theme('colors.gray.500');
+
+  --falbor-elements-code-background: theme('colors.gray.100');
+  --falbor-elements-code-text: theme('colors.gray.950');
+
+  --falbor-elements-button-primary-background: theme('colors.alpha.accent.10');
+  --falbor-elements-button-primary-backgroundHover: theme('colors.alpha.accent.20');
+  --falbor-elements-button-primary-text: theme('colors.accent.500');
+
+  --falbor-elements-button-secondary-background: theme('colors.alpha.gray.5');
+  --falbor-elements-button-secondary-backgroundHover: theme('colors.alpha.gray.10');
+  --falbor-elements-button-secondary-text: theme('colors.gray.950');
+
+  --falbor-elements-button-danger-background: theme('colors.alpha.red.10');
+  --falbor-elements-button-danger-backgroundHover: theme('colors.alpha.red.20');
+  --falbor-elements-button-danger-text: theme('colors.red.500');
+
+  --falbor-elements-item-contentDefault: theme('colors.alpha.gray.50');
+  --falbor-elements-item-contentActive: theme('colors.gray.950');
+  --falbor-elements-item-contentAccent: theme('colors.accent.700');
+  --falbor-elements-item-contentDanger: theme('colors.red.500');
+  --falbor-elements-item-backgroundDefault: rgba(0, 0, 0, 0);
+  --falbor-elements-item-backgroundActive: theme('colors.alpha.gray.5');
+  --falbor-elements-item-backgroundAccent: theme('colors.alpha.accent.10');
+  --falbor-elements-item-backgroundDanger: theme('colors.alpha.red.10');
+
+  --falbor-elements-loader-background: theme('colors.alpha.gray.10');
+  --falbor-elements-loader-progress: theme('colors.accent.500');
+
+  --falbor-elements-artifacts-background: theme('colors.white');
+  --falbor-elements-artifacts-backgroundHover: theme('colors.alpha.gray.2');
+  --falbor-elements-artifacts-borderColor: var(--falbor-elements-borderColor);
+  --falbor-elements-artifacts-inlineCode-background: theme('colors.gray.100');
+  --falbor-elements-artifacts-inlineCode-text: var(--falbor-elements-textPrimary);
+
+  --falbor-elements-actions-background: theme('colors.white');
+  --falbor-elements-actions-code-background: theme('colors.gray.800');
+
+  --falbor-elements-messages-background: theme('colors.gray.100');
+  --falbor-elements-messages-linkColor: theme('colors.accent.500');
+  --falbor-elements-messages-code-background: theme('colors.gray.800');
+  --falbor-elements-messages-inlineCode-background: theme('colors.gray.200');
+  --falbor-elements-messages-inlineCode-text: theme('colors.gray.800');
+
+  --falbor-elements-icon-success: theme('colors.green.500');
+  --falbor-elements-icon-error: theme('colors.red.500');
+  --falbor-elements-icon-primary: theme('colors.gray.950');
+  --falbor-elements-icon-secondary: theme('colors.gray.600');
+  --falbor-elements-icon-tertiary: theme('colors.gray.500');
+
+  --falbor-elements-dividerColor: theme('colors.gray.100');
+
+  --falbor-elements-prompt-background: theme('colors.alpha.white.80');
+
+  --falbor-elements-sidebar-dropdownShadow: theme('colors.alpha.gray.10');
+  --falbor-elements-sidebar-buttonBackgroundDefault: theme('colors.alpha.accent.10');
+  --falbor-elements-sidebar-buttonBackgroundHover: theme('colors.alpha.accent.20');
+  --falbor-elements-sidebar-buttonText: theme('colors.accent.700');
+
+  --falbor-elements-preview-addressBar-background: theme('colors.gray.100');
+  --falbor-elements-preview-addressBar-backgroundHover: theme('colors.alpha.gray.5');
+  --falbor-elements-preview-addressBar-backgroundActive: theme('colors.white');
+  --falbor-elements-preview-addressBar-text: var(--falbor-elements-textSecondary);
+  --falbor-elements-preview-addressBar-textActive: var(--falbor-elements-textPrimary);
+
+  --falbor-elements-terminals-background: theme('colors.white');
+  --falbor-elements-terminals-buttonBackground: var(--falbor-elements-bg-depth-4);
+
+  --falbor-elements-cta-background: theme('colors.gray.100');
+  --falbor-elements-cta-text: theme('colors.gray.950');
+
+  /* Terminal Colors */
+  --falbor-terminal-background: var(--falbor-elements-terminals-background);
+  --falbor-terminal-foreground: #333333;
+  --falbor-terminal-selection-background: #00000040;
+  --falbor-terminal-black: #000000;
+  --falbor-terminal-red: #cd3131;
+  --falbor-terminal-green: #00bc00;
+  --falbor-terminal-yellow: #949800;
+  --falbor-terminal-blue: #0451a5;
+  --falbor-terminal-magenta: #bc05bc;
+  --falbor-terminal-cyan: #0598bc;
+  --falbor-terminal-white: #555555;
+  --falbor-terminal-brightBlack: #686868;
+  --falbor-terminal-brightRed: #cd3131;
+  --falbor-terminal-brightGreen: #00bc00;
+  --falbor-terminal-brightYellow: #949800;
+  --falbor-terminal-brightBlue: #0451a5;
+  --falbor-terminal-brightMagenta: #bc05bc;
+  --falbor-terminal-brightCyan: #0598bc;
+  --falbor-terminal-brightWhite: #a5a5a5;
+  --modern-scrollbar-thumb-background: rgba(100, 100, 100, 0.3); // Example light theme color
+  --modern-scrollbar-thumb-backgroundHover: rgba(74, 74, 74, 0.8);
+}
+
+/* Color Tokens Dark Theme */
+:root[data-theme='dark'] {
+  --falbor-elements-borderColor: theme('colors.alpha.white.10');
+  --falbor-elements-borderColorActive: theme('colors.accent.500');
+
+  --falbor-elements-bg-depth-1: #0A0A0A;
+  --falbor-elements-bg-depth-2: theme('colors.gray.900');
+  --falbor-elements-bg-depth-3: theme('colors.gray.800');
+  --falbor-elements-bg-depth-4: theme('colors.alpha.white.5');
+
+  --falbor-elements-textPrimary: theme('colors.white');
+  --falbor-elements-textSecondary: theme('colors.gray.400');
+  --falbor-elements-textTertiary: theme('colors.gray.500');
+
+  --falbor-elements-code-background: theme('colors.gray.800');
+  --falbor-elements-code-text: theme('colors.white');
+
+  --falbor-elements-button-primary-background: theme('colors.alpha.accent.10');
+  --falbor-elements-button-primary-backgroundHover: theme('colors.alpha.accent.20');
+  --falbor-elements-button-primary-text: theme('colors.accent.500');
+
+  --falbor-elements-button-secondary-background: theme('colors.alpha.white.5');
+  --falbor-elements-button-secondary-backgroundHover: theme('colors.alpha.white.10');
+  --falbor-elements-button-secondary-text: theme('colors.white');
+
+  --falbor-elements-button-danger-background: theme('colors.alpha.red.10');
+  --falbor-elements-button-danger-backgroundHover: theme('colors.alpha.red.20');
+  --falbor-elements-button-danger-text: theme('colors.red.500');
+
+  --falbor-elements-item-contentDefault: theme('colors.alpha.white.50');
+  --falbor-elements-item-contentActive: theme('colors.white');
+  --falbor-elements-item-contentAccent: theme('colors.accent.500');
+  --falbor-elements-item-contentDanger: theme('colors.red.500');
+  --falbor-elements-item-backgroundDefault: rgba(255, 255, 255, 0);
+  --falbor-elements-item-backgroundActive: theme('colors.alpha.white.10');
+  --falbor-elements-item-backgroundAccent: theme('colors.alpha.accent.10');
+  --falbor-elements-item-backgroundDanger: theme('colors.alpha.red.10');
+
+  --falbor-elements-loader-background: theme('colors.alpha.gray.10');
+  --falbor-elements-loader-progress: theme('colors.accent.500');
+
+  --falbor-elements-artifacts-background: theme('colors.gray.900');
+  --falbor-elements-artifacts-backgroundHover: theme('colors.alpha.white.5');
+  --falbor-elements-artifacts-borderColor: var(--falbor-elements-borderColor);
+  --falbor-elements-artifacts-inlineCode-background: theme('colors.gray.800');
+  --falbor-elements-artifacts-inlineCode-text: theme('colors.white');
+
+  --falbor-elements-actions-background: theme('colors.gray.900');
+  --falbor-elements-actions-code-background: theme('colors.gray.800');
+
+  --falbor-elements-messages-background: theme('colors.gray.800');
+  --falbor-elements-messages-linkColor: theme('colors.accent.500');
+  --falbor-elements-messages-code-background: theme('colors.gray.900');
+  --falbor-elements-messages-inlineCode-background: theme('colors.gray.700');
+  --falbor-elements-messages-inlineCode-text: var(--falbor-elements-textPrimary);
+
+  --falbor-elements-icon-success: theme('colors.green.400');
+  --falbor-elements-icon-error: theme('colors.red.400');
+  --falbor-elements-icon-primary: theme('colors.gray.950');
+  --falbor-elements-icon-secondary: theme('colors.gray.600');
+  --falbor-elements-icon-tertiary: theme('colors.gray.500');
+
+  --falbor-elements-dividerColor: theme('colors.gray.100');
+
+  --falbor-elements-prompt-background: theme('colors.alpha.gray.80');
+
+  --falbor-elements-sidebar-dropdownShadow: theme('colors.alpha.gray.30');
+  --falbor-elements-sidebar-buttonBackgroundDefault: theme('colors.alpha.accent.10');
+  --falbor-elements-sidebar-buttonBackgroundHover: theme('colors.alpha.accent.20');
+  --falbor-elements-sidebar-buttonText: theme('colors.accent.500');
+
+  --falbor-elements-preview-addressBar-background: var(--falbor-elements-bg-depth-1);
+  --falbor-elements-preview-addressBar-backgroundHover: theme('colors.alpha.white.5');
+  --falbor-elements-preview-addressBar-backgroundActive: var(--falbor-elements-bg-depth-1);
+  --falbor-elements-preview-addressBar-text: var(--falbor-elements-textSecondary);
+  --falbor-elements-preview-addressBar-textActive: var(--falbor-elements-textPrimary);
+
+  --falbor-elements-terminals-background: var(--falbor-elements-bg-depth-1);
+  --falbor-elements-terminals-buttonBackground: var(--falbor-elements-bg-depth-3);
+
+  --falbor-elements-cta-background: theme('colors.alpha.white.10');
+  --falbor-elements-cta-text: theme('colors.white');
+  --falbor-terminal-background: var(--falbor-elements-terminals-background);
+  --falbor-terminal-foreground: #eff0eb;
+  --falbor-terminal-selection-background: #97979b33;
+  --falbor-terminal-black: #000000;
+  --falbor-terminal-red: #ff5c57;
+  --falbor-terminal-green: #5af78e;
+  --falbor-terminal-yellow: #f3f99d;
+  --falbor-terminal-blue: #57c7ff;
+  --falbor-terminal-magenta: #ff6ac1;
+  --falbor-terminal-cyan: #9aedfe;
+  --falbor-terminal-white: #f1f1f0;
+  --falbor-terminal-brightBlack: #686868;
+  --falbor-terminal-brightRed: #ff5c57;
+  --falbor-terminal-brightGreen: #5af78e;
+  --falbor-terminal-brightYellow: #f3f99d;
+  --falbor-terminal-brightBlue: #57c7ff;
+  --falbor-terminal-brightMagenta: #ff6ac1;
+  --falbor-terminal-brightCyan: #9aedfe;
+  --falbor-terminal-brightWhite: #f1f1f0;
+  --modern-scrollbar-thumb-background: rgba(100, 100, 100, 0.3);
+  --modern-scrollbar-thumb-backgroundHover: rgba(10, 10, 10, 0.8);
+}
+
+:root {
+  --header-height: 54px;
+  --chat-max-width: 33rem;
+  --chat-min-width: 533px;
+  --workbench-gap: 0rem;
+  --workbench-width: min(calc(100% - var(--chat-min-width) - var(--workbench-gap)), 2536px);
+  --workbench-inner-width: var(--workbench-width);
+  --workbench-left: calc(100% - var(--workbench-width));
+  --toastify-color-progress-success: var(--falbor-elements-icon-success);
+  --toastify-color-progress-error: var(--falbor-elements-icon-error);
+  --falbor-elements-terminal-backgroundColor: var(--falbor-terminal-background);
+  --falbor-elements-terminal-textColor: var(--falbor-terminal-foreground);
+  --falbor-elements-terminal-cursorColor: var(--falbor-terminal-foreground);
+  --falbor-elements-terminal-selection-backgroundColor: var(--falbor-terminal-selection-background);
+  --falbor-elements-terminal-color-black: var(--falbor-terminal-black);
+  --falbor-elements-terminal-color-red: var(--falbor-terminal-red);
+  --falbor-elements-terminal-color-green: var(--falbor-terminal-green);
+  --falbor-elements-terminal-color-yellow: var(--falbor-terminal-yellow);
+  --falbor-elements-terminal-color-blue: var(--falbor-terminal-blue);
+  --falbor-elements-terminal-color-magenta: var(--falbor-terminal-magenta);
+  --falbor-elements-terminal-color-cyan: var(--falbor-terminal-cyan);
+  --falbor-elements-terminal-color-white: var(--falbor-terminal-white);
+  --falbor-elements-terminal-color-brightBlack: var(--falbor-terminal-brightBlack);
+  --falbor-elements-terminal-color-brightRed: var(--falbor-terminal-brightRed);
+  --falbor-elements-terminal-color-brightGreen: var(--falbor-terminal-brightGreen);
+  --falbor-elements-terminal-color-brightYellow: var(--falbor-terminal-brightYellow);
+  --falbor-elements-terminal-color-brightBlue: var(--falbor-terminal-brightBlue);
+  --falbor-elements-terminal-color-brightMagenta: var(--falbor-terminal-brightMagenta);
+  --falbor-elements-terminal-color-brightCyan: var(--falbor-terminal-brightCyan);
+  --falbor-elements-terminal-color-brightWhite: var(--falbor-terminal-brightWhite);
+}

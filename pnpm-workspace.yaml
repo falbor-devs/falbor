@@ -1,0 +1,14 @@
+packages:
+  - 'apps/*'
+
+allowBuilds:
+  '@google/genai': set this to true or false
+  '@parcel/watcher': set this to true or false
+  bufferutil: set this to true or false
+  core-js: true
+  esbuild: true
+  isolated-vm: set this to true or false
+  msgpackr-extract: set this to true or false
+  protobufjs: set this to true or false
+  puppeteer: set this to true or false
+  unrs-resolver: true

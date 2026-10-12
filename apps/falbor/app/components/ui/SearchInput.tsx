@@ -1,0 +1,76 @@
+import React, { forwardRef } from 'react';
+import { classNames } from '~/utils/classNames';
+import { Input } from './Input';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface SearchInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  
+  onClear?: () => void;
+
+  
+  showClearButton?: boolean;
+
+  
+  iconClassName?: string;
+
+  
+  containerClassName?: string;
+
+  
+  loading?: boolean;
+}
+
+
+export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
+  (
+    { className, onClear, showClearButton = true, iconClassName, containerClassName, loading = false, ...props },
+    ref,
+  ) => {
+    const hasValue = Boolean(props.value);
+
+    return (
+      <div className={classNames('relative flex items-center w-full', containerClassName)}>
+        {}
+        <div
+          className={classNames(
+            'absolute left-3 top-1/2 -translate-y-1/2 text-falbor-elements-textTertiary',
+            iconClassName,
+          )}
+        >
+          {loading ? (
+            <span className="i-ph:spinner-gap animate-spin w-4 h-4" />
+          ) : (
+            <span className="i-ph:magnifying-glass w-4 h-4" />
+          )}
+        </div>
+
+        {}
+        <Input
+          ref={ref}
+          className={classNames('pl-10', hasValue && showClearButton ? 'pr-10' : '', className)}
+          {...props}
+        />
+
+        {}
+        <AnimatePresence>
+          {hasValue && showClearButton && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.15 }}
+              type="button"
+              onClick={onClear}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-falbor-elements-textTertiary hover:text-falbor-elements-textSecondary p-1 rounded-full hover:bg-falbor-elements-background-depth-2"
+              aria-label="Clear search"
+            >
+              <span className="i-ph:x w-3.5 h-3.5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  },
+);
+
+SearchInput.displayName = 'SearchInput';

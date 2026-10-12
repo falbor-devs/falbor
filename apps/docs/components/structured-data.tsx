@@ -1,0 +1,129 @@
+import { serializeJsonLd } from '@/lib/json-ld'
+import { DOCS_BASE_URL } from '@/lib/urls'
+
+interface StructuredDataProps {
+  title: string
+  description: string
+  url: string
+  dateModified?: string
+  breadcrumb?: Array<{ name: string; url: string }>
+}
+
+export function StructuredData({
+  title,
+  description,
+  url,
+  dateModified,
+  breadcrumb,
+}: StructuredDataProps) {
+  const baseUrl = DOCS_BASE_URL
+  const structuredDataId = encodeURIComponent(url)
+
+  const articleStructuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: title,
+    description: description,
+    url: url,
+    ...(dateModified && { dateModified }),
+    author: {
+      '@type': 'Organization',
+      name: 'Sim Team',
+      url: baseUrl,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Sim',
+      url: baseUrl,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${baseUrl}/static/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': url,
+    },
+    inLanguage: 'en',
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'Sim Documentation',
+      url: baseUrl,
+    },
+    potentialAction: {
+      '@type': 'ReadAction',
+      target: url,
+    },
+  }
+
+  const breadcrumbStructuredData = breadcrumb && {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumb.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  }
+
+  const softwareStructuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Sim',
+    applicationCategory: 'BusinessApplication',
+    applicationSubCategory: 'AI Workspace',
+    operatingSystem: 'Any',
+    description:
+      'Sim is the open-source AI workspace where teams build, deploy, and manage AI agents. Connect 1,000+ integrations and every major LLM to create agents that automate real work.',
+    url: baseUrl,
+    author: {
+      '@type': 'Organization',
+      name: 'Sim Team',
+    },
+    offers: {
+      '@type': 'Offer',
+      category: 'Developer Tools',
+    },
+    featureList: [
+      'AI workspace for teams',
+      'Chat — natural language agent creation',
+      'Visual workflow builder',
+      '1,000+ integrations',
+      'LLM orchestration (OpenAI, Anthropic, Google, xAI, Mistral, Perplexity)',
+      'Knowledge base creation',
+      'Table creation',
+      'Document creation',
+    ],
+  }
+
+  return (
+    <>
+      <script
+        id={`article-json-ld-${structuredDataId}`}
+        type='application/ld+json'
+        dangerouslySetInnerHTML={{
+          __html: serializeJsonLd(articleStructuredData),
+        }}
+      />
+      {breadcrumbStructuredData && (
+        <script
+          id={`breadcrumb-json-ld-${structuredDataId}`}
+          type='application/ld+json'
+          dangerouslySetInnerHTML={{
+            __html: serializeJsonLd(breadcrumbStructuredData),
+          }}
+        />
+      )}
+      {(url === baseUrl || url === `${baseUrl}/`) && (
+        <script
+          id={`software-json-ld-${structuredDataId}`}
+          type='application/ld+json'
+          dangerouslySetInnerHTML={{
+            __html: serializeJsonLd(softwareStructuredData),
+          }}
+        />
+      )}
+    </>
+  )
+}

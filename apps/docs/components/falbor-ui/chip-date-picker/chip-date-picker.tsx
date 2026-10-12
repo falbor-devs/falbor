@@ -1,0 +1,189 @@
+'use client'
+
+import { forwardRef, useContext, useState } from 'react'
+import * as PopoverPrimitive from '@radix-ui/react-popover'
+import { ChevronDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Calendar, formatDateLabel, formatDateRangeLabel } from '../calendar/calendar'
+import { chipVariants, TRIGGER_BORDER_CLASS } from '../chip/chip'
+import { chipContentLabelClass, chipIconSlotClass } from '../chip/chip-chrome'
+import { InsideModalContext } from '../modal/modal'
+import { OverflowText } from '../overflow-text/overflow-text'
+import { POPOVER_ANIMATION_CLASSES } from '../popover/popover-animation'
+
+interface ChipDatePickerBaseProps {
+  /**
+   * Trigger chrome. `filled` (default) is the bordered field chip with the owned
+   * chevron; `ghost` is the bare toolbar pill — no border, no chevron — for
+   * visual parity with neighboring `Chip` buttons.
+   */
+  variant?: 'filled' | 'ghost'
+  /**
+   * Overrides the trigger text, e.g. a calendar period label ("June 2026") whose
+   * granularity differs from the selected value.
+   */
+  label?: string
+  /** Shown in the trigger when nothing is selected. */
+  placeholder?: string
+  /** Aligns the calendar popover relative to the trigger. */
+  align?: 'start' | 'center' | 'end'
+  /** Disables the trigger. */
+  disabled?: boolean
+  /** Stretch the trigger to fill its container (mirrors `Chip`'s `fullWidth`). */
+  fullWidth?: boolean
+  /** Forwarded class for the trigger button. */
+  className?: string
+}
+
+interface ChipDatePickerSingleProps extends ChipDatePickerBaseProps {
+  mode?: 'single'
+  /** Selected date as a `YYYY-MM-DD` string. */
+  value?: string
+  /** Called with the picked date in `YYYY-MM-DD` format. */
+  onChange?: (value: string) => void
+  /**
+   * Today's calendar day (`YYYY-MM-DD`) in the caller's effective timezone;
+   * defaults to the runtime's local day (mirrors `Calendar`'s `today`).
+   */
+  today?: string
+  /** Adds a time-of-day field, emitting `YYYY-MM-DDTHH:mm`; the popover stays open while it is set. */
+  showTime?: boolean
+  /** Label beside the time field when `showTime` is set. Defaults to `Time`. */
+  timeLabel?: string
+}
+
+interface ChipDatePickerRangeProps extends ChipDatePickerBaseProps {
+  mode: 'range'
+  /** Range start as a `YYYY-MM-DD` (or `YYYY-MM-DDTHH:mm`) string. */
+  startDate?: string
+  /** Range end as a `YYYY-MM-DD` (or `YYYY-MM-DDTHH:mm`) string. */
+  endDate?: string
+  /** Adds start/end time-of-day inputs; emits `YYYY-MM-DDTHH:mm` bounds. */
+  showTime?: boolean
+  /** Called on Apply with the ordered range bounds. */
+  onRangeChange: (start: string, end: string) => void
+  /** Called on Clear, so a committed range can be dropped by whoever owns it. */
+  onClear?: () => void
+}
+
+type ChipDatePickerProps = ChipDatePickerSingleProps | ChipDatePickerRangeProps
+
+/**
+ * Date counterpart to {@link ChipDropdown} — a chip-styled trigger that opens a
+ * {@link Calendar} in a popover. The default `filled` trigger reuses
+ * `chipVariants` (filled + border) and the owned chevron for visual parity with
+ * the other chip field controls; `ghost` renders the bare toolbar pill instead.
+ *
+ * `mode='single'` (default) commits on day click; with `showTime` it also emits the
+ * time of day and stays open while it is set. `mode='range'` opens the
+ * range calendar — start/end staged behind Clear/Cancel/Apply, with optional
+ * time-of-day inputs — and commits via `onRangeChange`.
+ *
+ * @example
+ * <ChipDatePicker value={value} onChange={setValue} placeholder='Select date' fullWidth />
+ *
+ * @example
+ * <ChipDatePicker mode='range' startDate={from} endDate={to} showTime onRangeChange={apply} />
+ */
+const ChipDatePicker = forwardRef<HTMLButtonElement, ChipDatePickerProps>(
+  function ChipDatePicker(props, ref) {
+    const {
+      variant = 'filled',
+      label,
+      placeholder = props.mode === 'range' ? 'Select date range' : 'Select date',
+      align = 'start',
+      disabled,
+      fullWidth,
+      className,
+    } = props
+
+    /**
+     * Inside a modal dialog the calendar must be modal too: a non-modal popover
+     * portaled to `body` inherits the dialog's `pointer-events: none` body lock
+     * and cannot be clicked. Outside dialogs it stays non-modal.
+     */
+    const insideModal = useContext(InsideModalContext)
+    const [open, setOpen] = useState(false)
+
+    const triggerText =
+      label ??
+      (props.mode === 'range'
+        ? formatDateRangeLabel(props.startDate, props.endDate)
+        : formatDateLabel(props.value))
+
+    return (
+      <PopoverPrimitive.Root open={open} onOpenChange={setOpen} modal={insideModal}>
+        <PopoverPrimitive.Trigger asChild disabled={disabled}>
+          <button
+            ref={ref}
+            type='button'
+            disabled={disabled}
+            className={cn(
+              variant === 'ghost'
+                ? chipVariants({ fullWidth })
+                : cn(chipVariants({ variant: 'filled', fullWidth }), TRIGGER_BORDER_CLASS),
+              className
+            )}
+          >
+            <OverflowText
+              label={triggerText || placeholder}
+              className={cn(
+                chipContentLabelClass,
+                'flex-1',
+                !triggerText && 'text-[var(--text-muted)]'
+              )}
+              focusTarget='nearest-interactive'
+            />
+            {variant === 'filled' && (
+              <span aria-hidden className={cn(chipIconSlotClass, 'text-[var(--text-icon)]')}>
+                <ChevronDown className='size-[14px]' />
+              </span>
+            )}
+          </button>
+        </PopoverPrimitive.Trigger>
+        <PopoverPrimitive.Portal>
+          <PopoverPrimitive.Content
+            align={align}
+            sideOffset={6}
+            collisionPadding={8}
+            data-native-surface-overlay=''
+            className={cn(
+              POPOVER_ANIMATION_CLASSES,
+              'z-[var(--z-popover)] origin-[--radix-popover-content-transform-origin] rounded-xl border border-[var(--border-1)] bg-[var(--bg)] shadow-xs'
+            )}
+          >
+            {props.mode === 'range' ? (
+              <Calendar
+                mode='range'
+                startDate={props.startDate}
+                endDate={props.endDate}
+                showTime={props.showTime}
+                onRangeChange={(start, end) => {
+                  props.onRangeChange(start, end)
+                  setOpen(false)
+                }}
+                onCancel={() => setOpen(false)}
+                onClear={props.onClear}
+              />
+            ) : (
+              <Calendar
+                value={props.value}
+                today={props.today}
+                showTime={props.showTime}
+                timeLabel={props.timeLabel}
+                onChange={(next) => {
+                  props.onChange?.(next)
+                  if (!props.showTime) setOpen(false)
+                }}
+              />
+            )}
+          </PopoverPrimitive.Content>
+        </PopoverPrimitive.Portal>
+      </PopoverPrimitive.Root>
+    )
+  }
+)
+
+ChipDatePicker.displayName = 'ChipDatePicker'
+
+export { ChipDatePicker }

@@ -1,0 +1,24 @@
+{
+  "name": "falbor-stayup-sdk",
+  "version": "1.0.0",
+  "description": "StayUp error monitoring and crash reporting SDK for JavaScript and TypeScript applications.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "error",
+    "monitoring",
+    "crash",
+    "reporting",
+    "sdk"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

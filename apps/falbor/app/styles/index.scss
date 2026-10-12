@@ -1,0 +1,62 @@
+@use 'variables.scss';
+@use 'z-index.scss';
+@use 'animations.scss';
+@use 'components/terminal.scss';
+@use 'components/resize-handle.scss';
+@use 'components/code.scss';
+@use 'components/editor.scss';
+@use 'components/toast.scss';
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  background-color: var(--falbor-elements-bg-depth-1);
+}
+
+:root {
+  --gradient-opacity: 0.8;
+  --primary-color: rgba(224, 54, 2, var(--gradient-opacity));
+  --secondary-color: rgba(196, 50, 6, var(--gradient-opacity));
+  --accent-color: rgba(177, 43, 6, var(--gradient-opacity));
+}
+
+.modern-scrollbar {
+  overflow: auto;
+
+  &::-webkit-scrollbar {
+    width: 2px;
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--modern-scrollbar-thumb-background);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--modern-scrollbar-thumb-backgroundHover);
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--modern-scrollbar-thumb-backgroundHover) transparent;
+}
+
+.modern-scrollbar-invert {
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--falbor-elements-textPrimary), transparent 70%);
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--falbor-elements-textPrimary), transparent 50%);
+  }
+
+  scrollbar-color: color-mix(in srgb, var(--falbor-elements-textPrimary), transparent 50%) transparent;
+}

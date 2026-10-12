@@ -1,0 +1,73 @@
+:root {
+  --cm-backgroundColor: var(--falbor-elements-editor-backgroundColor, var(--falbor-elements-bg-depth-1));
+  --cm-textColor: var(--falbor-elements-editor-textColor, var(--falbor-elements-textPrimary));
+  --cm-gutter-backgroundColor: var(--falbor-elements-editor-gutter-backgroundColor, var(--cm-backgroundColor));
+  --cm-gutter-textColor: var(--falbor-elements-editor-gutter-textColor, var(--falbor-elements-textSecondary));
+  --cm-gutter-activeLineTextColor: var(--falbor-elements-editor-gutter-activeLineTextColor, var(--cm-gutter-textColor));
+  --cm-foldGutter-textColor: var(--falbor-elements-editor-foldGutter-textColor, var(--cm-gutter-textColor));
+  --cm-foldGutter-textColorHover: var(--falbor-elements-editor-foldGutter-textColorHover, var(--cm-gutter-textColor));
+  --cm-activeLineBackgroundColor: var(--falbor-elements-editor-activeLineBackgroundColor, rgb(224 231 235 / 30%));
+  --cm-cursor-width: 2px;
+  --cm-cursor-backgroundColor: var(--falbor-elements-editor-cursorColor, var(--falbor-elements-textSecondary));
+  --cm-matching-bracket: var(--falbor-elements-editor-matchingBracketBackgroundColor, rgb(50 140 130 / 0.3));
+  --cm-selection-backgroundColorFocused: var(--falbor-elements-editor-selection-backgroundColor, #42b4ff);
+  --cm-selection-backgroundOpacityFocused: var(--falbor-elements-editor-selection-backgroundOpacity, 0.3);
+  --cm-selection-backgroundColorBlured: var(--falbor-elements-editor-selection-inactiveBackgroundColor, #c9e9ff);
+  --cm-selection-backgroundOpacityBlured: var(--falbor-elements-editor-selection-inactiveBackgroundOpacity, 0.3);
+  --cm-panels-borderColor: var(--falbor-elements-editor-panels-borderColor, var(--falbor-elements-borderColor));
+  --cm-search-backgroundColor: var(--falbor-elements-editor-search-backgroundColor, var(--cm-backgroundColor));
+  --cm-search-textColor: var(--falbor-elements-editor-search-textColor, var(--falbor-elements-textSecondary));
+  --cm-search-closeButton-backgroundColor: var(--falbor-elements-editor-search-closeButton-backgroundColor, transparent);
+  --cm-search-closeButton-backgroundColorHover: var(--falbor-elements-editor-search-closeButton-backgroundColorHover,
+      var(--falbor-elements-item-backgroundActive));
+  --cm-search-closeButton-textColor: var(--falbor-elements-editor-search-closeButton-textColor,
+      var(--falbor-elements-item-contentDefault));
+  --cm-search-closeButton-textColorHover: var(--falbor-elements-editor-search-closeButton-textColorHover,
+      var(--falbor-elements-item-contentActive));
+  --cm-search-button-backgroundColor: var(--falbor-elements-editor-search-button-backgroundColor,
+      var(--falbor-elements-item-backgroundDefault));
+  --cm-search-button-backgroundColorHover: var(--falbor-elements-editor-search-button-backgroundColorHover,
+      var(--falbor-elements-item-backgroundActive));
+  --cm-search-button-textColor: var(--falbor-elements-editor-search-button-textColor, var(--falbor-elements-textSecondary));
+  --cm-search-button-textColorHover: var(--falbor-elements-editor-search-button-textColorHover,
+      var(--falbor-elements-textPrimary));
+  --cm-search-button-borderColor: var(--falbor-elements-editor-search-button-borderColor, transparent);
+  --cm-search-button-borderColorHover: var(--falbor-elements-editor-search-button-borderColorHover, transparent);
+  --cm-search-button-borderColorFocused: var(--falbor-elements-editor-search-button-borderColorFocused,
+      var(--falbor-elements-borderColorActive));
+  --cm-search-input-backgroundColor: var(--falbor-elements-editor-search-input-backgroundColor, transparent);
+  --cm-search-input-textColor: var(--falbor-elements-editor-search-input-textColor, var(--falbor-elements-textPrimary));
+  --cm-search-input-borderColor: var(--falbor-elements-editor-search-input-borderColor, var(--falbor-elements-borderColor));
+  --cm-search-input-borderColorFocused: var(--falbor-elements-editor-search-input-borderColorFocused,
+      var(--falbor-elements-borderColorActive));
+  --cm-tooltip-backgroundColor: var(--falbor-elements-editor-tooltip-backgroundColor, var(--cm-backgroundColor));
+  --cm-tooltip-textColor: var(--falbor-elements-editor-tooltip-textColor, var(--falbor-elements-textPrimary));
+  --cm-tooltip-backgroundColorSelected: var(--falbor-elements-editor-tooltip-backgroundColorSelected,
+      theme('colors.alpha.accent.30'));
+  --cm-tooltip-textColorSelected: var(--falbor-elements-editor-tooltip-textColorSelected,
+      var(--falbor-elements-textPrimary));
+  --cm-tooltip-borderColor: var(--falbor-elements-editor-tooltip-borderColor, var(--falbor-elements-borderColor));
+  --cm-searchMatch-backgroundColor: var(--falbor-elements-editor-searchMatch-backgroundColor, rgba(234, 92, 0, 0.33));
+}
+
+html[data-theme='light'] {
+  --falbor-elements-editor-gutter-textColor: #237893;
+  --falbor-elements-editor-gutter-activeLineTextColor: var(--falbor-elements-textPrimary);
+  --falbor-elements-editor-foldGutter-textColorHover: var(--falbor-elements-textPrimary);
+  --falbor-elements-editor-activeLineBackgroundColor: rgb(50 53 63 / 5%);
+  --falbor-elements-editor-tooltip-backgroundColorSelected: theme('colors.alpha.accent.20');
+  --falbor-elements-editor-search-button-backgroundColor: theme('colors.gray.100');
+  --falbor-elements-editor-search-button-backgroundColorHover: theme('colors.alpha.gray.10');
+}
+
+html[data-theme='dark'] {
+  --cm-backgroundColor: var(--falbor-elements-bg-depth-2);
+  --falbor-elements-editor-gutter-textColor: var(--falbor-elements-textTertiary);
+  --falbor-elements-editor-gutter-activeLineTextColor: var(--falbor-elements-textSecondary);
+  --falbor-elements-editor-selection-inactiveBackgroundOpacity: 0.3;
+  --falbor-elements-editor-activeLineBackgroundColor: rgb(50 53 63 / 50%);
+  --falbor-elements-editor-foldGutter-textColorHover: var(--falbor-elements-textPrimary);
+  --falbor-elements-editor-matchingBracketBackgroundColor: rgba(66, 180, 255, 0.3);
+  --falbor-elements-editor-search-button-backgroundColor: theme('colors.gray.800');
+  --falbor-elements-editor-search-button-backgroundColorHover: theme('colors.alpha.white.10');
+}

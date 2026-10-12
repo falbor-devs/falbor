@@ -1,0 +1,24 @@
+{
+  "name": "falbor-analytics-sdk",
+  "version": "1.0.0",
+  "description": "Falbor Analytics SDK for web telemetry and tracking.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "analytics",
+    "tracking",
+    "telemetry",
+    "sdk",
+    "falbor"
+  ],
+  "author": "Falbor",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

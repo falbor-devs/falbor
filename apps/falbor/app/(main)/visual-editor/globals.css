@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  min-height: 100vh;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 
+R (0)
+G (110)
+B (255 */
+
+@layer base {
+  :root {
+    /* LIGHT MODE */
+    --background: 60 14% 97%;
+    /* #F8F8F6 */
+    --foreground: 20 10% 10%;
+
+    --card: 0 0% 100%;
+    /* white */
+    --card-foreground: 20 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 10% 10%;
+
+    --primary: 204 85% 44%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 60 10% 92%;
+    --secondary-foreground: 20 10% 20%;
+
+    --muted: 60 10% 94%;
+    --muted-foreground: 20 5% 40%;
+
+    --accent: 60 10% 94%;
+    --accent-foreground: 20 10% 20%;
+
+    --border: 60 10% 85%;
+    --input: 60 10% 85%;
+    --ring: 16 63% 60%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* DARK MODE */
+    --background: 60 2% 12%;
+    /* #1F1F1E */
+    --foreground: 0 0% 95%;
+
+    --card: 60 2% 17%;
+    /* #2C2C2A */
+    --card-foreground: 0 0% 95%;
+
+    --popover: 60 2% 17%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 16 63% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 60 2% 20%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 60 2% 20%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 60 2% 20%;
+    --accent-foreground: 0 0% 90%;
+
+    --border: 60 2% 24%;
+    --input: 60 2% 24%;
+    --ring: 16 63% 60%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.dotPattern {
+  background-image: radial-gradient(rgb(35, 40, 68) 1px, transparent 1px);
+  background-size: 25px 25px;
+}
+
+.use-automation-zoom-in {
+  animation: automation-zoom-in 0.5s;
+}
+
+@keyframes automation-zoom-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.editor-element {
+  transition: all 0.1s ease;
+  outline: 1px solid transparent;
+}
+
+.editor-element:hover {
+  outline: 1px solid #0099FF !important;
+  outline-offset: -1px;
+}
+
+.editor-element-selected {
+  outline: 1px solid #0099FF !important;
+  outline-offset: -1px;
+}
+
+.drop-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: #0099FF;
+  z-index: 999;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(0, 153, 255, 0.5);
+}
+
+.editor-element input:hover,
+.editor-element button:hover,
+.editor-element textarea:hover,
+.editor-element a:hover,
+.editor-element iframe:hover {
+  outline: 1px solid #0099FF !important;
+  outline-offset: -1px;
+}
