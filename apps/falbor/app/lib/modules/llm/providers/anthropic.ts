@@ -124,6 +124,13 @@ export default class AnthropicProvider extends BaseProvider {
       headers: { 'anthropic-beta': 'output-128k-2025-02-19' },
     });
 
-    return anthropic(model);
+    const resolvedModel =
+      model === 'claude-haiku-4-5'
+        ? 'claude-3-5-haiku-20241022'
+        : model === 'claude-sonnet-4-5'
+        ? 'claude-3-5-sonnet-20241022'
+        : model;
+
+    return anthropic(resolvedModel);
   };
 }

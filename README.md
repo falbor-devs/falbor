@@ -51,4 +51,11 @@ You have two options:
 
 ```bash
 git clone https://github.com/falbor-devs/falbor.git
-cd falbor
+cd apps/falbor
+npm install
+npm run dev
+```
+
+## if you have any skill on coding, we will be happy if you contribute to Falbor!
+
+Built with ❤️ by [falbor developers](https://falbor.xyz/about)

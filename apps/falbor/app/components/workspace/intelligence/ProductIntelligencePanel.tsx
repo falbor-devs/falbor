@@ -192,12 +192,19 @@ export function ProductIntelligencePanel({ workspaceId, initialData }: ProductIn
     loadSession();
 
     if (!initialData && !data) {
-      getWorkspaceIntelligence(workspaceId).then((existing) => {
-        if (existing) {
-          setData(normalizeIntelligence(existing));
-        }
-        setLoading(false);
-      }).catch(() => setLoading(false));
+      getWorkspaceIntelligence(workspaceId)
+        .then((existing) => {
+          if (existing) {
+            setData(normalizeIntelligence(existing));
+            setLoading(false);
+          } else {
+            // No intelligence stored yet — automatically trigger research
+            fetchIntelligence(true);
+          }
+        })
+        .catch(() => {
+          fetchIntelligence(true);
+        });
     }
   }, [workspaceId, initialData]);
 
@@ -226,7 +233,25 @@ export function ProductIntelligencePanel({ workspaceId, initialData }: ProductIn
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="flex-1 w-full p-6 flex flex-col items-center justify-center text-center">
+        <div className="max-w-md p-8 rounded-2xl border border-falbor-elements-borderColor bg-falbor-elements-background-depth-2">
+          <div className="i-ph:chart-pie-slice-duotone text-5xl text-falbor-elements-textTertiary mb-4 mx-auto" />
+          <h3 className="text-lg font-semibold text-falbor-elements-textPrimary mb-2">No Product Intelligence yet</h3>
+          <p className="text-sm text-falbor-elements-textSecondary mb-6">
+            Run an AI research pass to analyze your product market, audience, competitors, and growth opportunities.
+          </p>
+          <button
+            onClick={() => fetchIntelligence(true)}
+            className="px-6 py-2.5 rounded-lg bg-falbor-elements-button-primary-background hover:bg-falbor-elements-button-primary-backgroundHover text-falbor-elements-button-primary-text font-medium text-sm transition-colors shadow-sm"
+          >
+            Generate Intelligence
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const toggleTile = (id: string) => {
     setExpandedTile(id);
