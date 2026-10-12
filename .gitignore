@@ -26,10 +26,6 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
-
-# vercel
-.vercel
-
-/models/
-public/site/
 .env*
+!.env.example
+!.env*.example
