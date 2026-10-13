@@ -72,7 +72,8 @@ export async function middleware(request: NextRequest) {
     } else {
       // Do not treat ngrok/trycloudflare or /api routes as tenant subdomains
       const isTunnel = hostname.includes("ngrok") || hostname.includes("trycloudflare");
-      if (!isTunnel && !pathname.startsWith('/api/') && parts.length >= 3) {
+      const isVercelHost = hostname.endsWith(".vercel.app") && parts.length <= 3;
+      if (!isVercelHost && !isTunnel && !pathname.startsWith('/api/') && parts.length >= 3) {
         const sub = parts[0];
         if (sub !== 'www' && sub !== 'hacking' && sub !== 'docs' && sub !== 'api') {
           subdomain = sub;

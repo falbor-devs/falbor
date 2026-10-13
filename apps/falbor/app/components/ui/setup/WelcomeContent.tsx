@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { SetupButton } from './SetupButton';
 
-import { createWorkspace } from '~/lib/actions/workspaces';
+import { createWorkspace, getLastUsedWorkspace } from '~/lib/actions/workspaces';
 import { toast } from 'react-toastify';
 
 export function WelcomeContent() {
@@ -16,7 +16,8 @@ export function WelcomeContent() {
     
     if (type === 'chat') {
       try {
-        const workspaceId = await createWorkspace("Untitled Workspace");
+        const existing = await getLastUsedWorkspace();
+        const workspaceId = existing?.id ?? (await createWorkspace("Untitled Workspace"));
         router.push(`/workspace/${workspaceId}`);
       } catch (e: any) {
         console.error(e);
@@ -59,7 +60,7 @@ export function WelcomeContent() {
 
         <div className="flex items-center gap-6">
           <SetupButton
-            onClick={() => handleRoute('/org-setup', 'org')}
+            onClick={() => handleRoute('/workspace/org-setup', 'org')}
             icon={<div className="i-ph:buildings w-4 h-4" />}
             isLoading={loadingRoute === 'org'}
           >
