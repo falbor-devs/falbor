@@ -37,7 +37,7 @@ const HANDLERS: Record<StageKey, StageHandler> = {
   update_workspace: updateWorkspace,
 };
 
-const LEASE_RENEW_INTERVAL_MS = 60_000;
+const LEASE_RENEW_INTERVAL_MS = 30_000;
 const RETRY_BACKOFF_MS = 3_000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -132,8 +132,6 @@ export async function retryFailedBuild(workspaceId: string) {
     .update(workspaceBuilds)
     .set({ status: 'pending', retryCount: build.retryCount + 1, errorMessage: null, updatedAt: new Date() })
     .where(eq(workspaceBuilds.id, build.id));
-
-  triggerWorkspaceBuild(workspaceId);
 
   return true;
 }

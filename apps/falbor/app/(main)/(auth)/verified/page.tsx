@@ -35,7 +35,7 @@ function VerifiedForm() {
             const data = await res.json();
             if (res.ok) {
                 await refresh();
-                router.push(role === "marketer" ? "/marketer-onboarding" : "/welcome");
+                router.push(role === "marketer" ? "/workspace/marketer-onboarding" : "/workspace/welcome");
                 router.refresh();
             } else {
                 setError(data.error || "Verification failed");

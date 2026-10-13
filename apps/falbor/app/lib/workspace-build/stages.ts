@@ -35,4 +35,4 @@ export interface BuildState {
 }
 
 export const MAX_STAGE_ATTEMPTS = 3;
-export const LEASE_DURATION_MS = 5 * 60_000;
+export const LEASE_DURATION_MS = 90_000;

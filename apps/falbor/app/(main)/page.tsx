@@ -146,7 +146,7 @@ function PageContent() {
         if (workspace) {
           router.push(`/workspace/${workspace.id}`);
         } else {
-          router.push(`/welcome`);
+          router.push(`/workspace/welcome`);
         }
       });
       return;

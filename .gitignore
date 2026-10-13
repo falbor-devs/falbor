@@ -12,6 +12,8 @@ out/
 
 # production
 build/
+!apps/falbor/app/components/workspace/build/
+!apps/falbor/app/api/workspace/*/build/
 
 # misc
 .DS_Store
