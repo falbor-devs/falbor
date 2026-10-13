@@ -84,7 +84,7 @@ export default function SignupPage() {
         } else {
             const urlParams = new URLSearchParams(window.location.search);
             const role = urlParams.get("role");
-            router.push(role === "marketer" ? "/marketer-onboarding" : "/welcome");
+            router.push(role === "marketer" ? "/workspace/marketer-onboarding" : "/workspace/welcome");
         }
     };
 
