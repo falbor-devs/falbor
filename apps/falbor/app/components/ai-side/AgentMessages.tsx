@@ -605,9 +605,10 @@ export const AgentMessages = ({ events, isActive }: { events: AIEvent[]; isActiv
     "I'll help you stay on top of your work in Falbor by flagging what matters, surfacing what's next, and jumping in when you need a hand.";
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col justify-end">
+    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col">
+      <div className="mt-auto w-full max-w-[480px] mx-auto p-3">
       {events.length === 0 && !isActive ? (
-        <div className="flex flex-col items-start text-left py-2 px-1 max-w-[440px] w-full mx-auto animate-fade-in">
+        <div className="flex flex-col items-start text-left py-2 px-1 w-full animate-fade-in">
           {/* Logo / Agent Avatar on left */}
           <div className="mb-4">
             {currentAgent?.avatarUrl ? (
@@ -663,6 +664,7 @@ export const AgentMessages = ({ events, isActive }: { events: AIEvent[]; isActiv
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };

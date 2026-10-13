@@ -270,7 +270,7 @@ Target Action & Instructions:
   return (
     <form
       onSubmit={handleSendMessage}
-      className="p-3 relative max-w-[440px] w-full mx-auto"
+      className="p-3 relative max-w-[480px] w-full mx-auto"
     >
 
       {sortedOptions.length > 0 && !isActive && (
