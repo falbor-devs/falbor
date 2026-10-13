@@ -45,7 +45,7 @@ export default function LoginPage() {
             const role = urlParams.get("role");
             const redirectUrl = urlParams.get("redirect");
             if (role === "marketer") {
-                router.push("/marketer-onboarding");
+                router.push("/workspace/marketer-onboarding");
             } else if (redirectUrl) {
                 window.location.href = redirectUrl;
             } else {
