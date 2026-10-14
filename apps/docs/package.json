@@ -13,6 +13,7 @@
     "fumadocs-core": "^16.17.1",
     "fumadocs-openapi": "^10.8.1",
     "fumadocs-ui": "^16.17.1",
+    "lucide-react": "^0.485.0",
     "next": "^14.2.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
