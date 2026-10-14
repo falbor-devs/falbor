@@ -37,8 +37,8 @@ importers:
         specifier: ^16.17.1
         version: 16.17.2(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@18.3.31)(lucide-react@0.485.0(react@18.3.1))(next@14.2.3(@babel/core@7.29.7(supports-color@7.2.0))(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.104.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(supports-color@7.2.0)
       fumadocs-openapi:
-        specifier: ^10.8.1
-        version: 10.10.3(74f63d5b1c5056ac167f51c2369d84e3)
+        specifier: ^12.4.1
+        version: 12.4.2(78404056c66dfd4e15c901cb758604e6)
       fumadocs-ui:
         specifier: ^16.17.1
         version: 16.17.2(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(fumadocs-core@16.17.2(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@18.3.31)(lucide-react@0.485.0(react@18.3.1))(next@14.2.3(@babel/core@7.29.7(supports-color@7.2.0))(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.104.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(supports-color@7.2.0))(next@14.2.3(@babel/core@7.29.7(supports-color@7.2.0))(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.104.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(supports-color@7.2.0)
@@ -2138,31 +2138,12 @@ packages:
   '@fumari/image-size@0.1.1':
     resolution: {integrity: sha512-iaiV2wyzJ4mW358NX4CX3yGit+WjKYzpaQ+rldK9BjL/5jFpeV6ruWnZVq7MEyMn3Gd0DLi8g/79NZAAQaGscw==}
 
-  '@fumari/json-schema-ts@0.0.2':
-    resolution: {integrity: sha512-A2x8nj45r8Kc3Gqa+HpWRF9uzIMc9dySB6L2R2kiyjLHXWBsZUX99Atj5+Yup/iRQXQ9s8AX+uAPwPze7Xn05A==}
-    engines: {node: '>=20.0.0'}
-    peerDependencies:
-      json-schema-typed: ^8.0.2
-    peerDependenciesMeta:
-      json-schema-typed:
-        optional: true
-
   '@fumari/json-schema-ts@1.0.2':
     resolution: {integrity: sha512-1NHGl8Oqg50mhpWMvbhqnwFRLBugkGCRubLSH/TrAzTAS99x4z0xFgOVcbJne+yfaZv94ZNdmRWobDvUiZswPg==}
     peerDependencies:
       json-schema-typed: '*'
     peerDependenciesMeta:
       json-schema-typed:
-        optional: true
-
-  '@fumari/stf@1.0.5':
-    resolution: {integrity: sha512-O9UQIbV15ePV5vUgceCcaMDuBRYfrSuogDEY5E//CmrbIiWJ1Ji5VgGHHH0L0HQuRr5riUJuAEr9lYIvJl9OyQ==}
-    peerDependencies:
-      '@types/react': '*'
-      react: ^19.2.0
-      react-dom: ^19.2.0
-    peerDependenciesMeta:
-      '@types/react':
         optional: true
 
   '@fumari/stf@1.1.1':
@@ -5404,14 +5385,6 @@ packages:
     resolution: {integrity: sha512-Ap6G0WQwcU/LHsvLwON1fAQX9Zp0A2Y6Y/cJBl9r/JbW90Zyg4/zbG6zzKa2OTALELarYHmKu0GhpM5EO+7T0g==}
     engines: {node: '>=0.10'}
 
-  esrap@2.4.0:
-    resolution: {integrity: sha512-CQPcneEHw/czj32uwQC52nYnax8H4SXt25FCM+LIwGZ49cMIxpOj3bP8wmzcI+Z0HIy5KkClaPhRLfCySzwHPA==}
-    peerDependencies:
-      '@typescript-eslint/types': ^8.2.0
-    peerDependenciesMeta:
-      '@typescript-eslint/types':
-        optional: true
-
   esrecurse@4.3.0:
     resolution: {integrity: sha512-KmfKL3b6G+RXvP8N1vr3Tq1kL/oCFgn2NYXEtqP8/L3pKapUA4G8cFVaoF3SU323CD4XypR/ffioHmkti6/Tag==}
     engines: {node: '>=4.0'}
@@ -5727,24 +5700,6 @@ packages:
       waku:
         optional: true
       zod:
-        optional: true
-
-  fumadocs-openapi@10.10.3:
-    resolution: {integrity: sha512-3apXz0fZz301rnEWaMgMLQwoyuAmV8DczcOVRkGfBl9fnOjO2f2UcVGtiC5k7CTIorCbzOXUfjUPo5ZpDbleDg==}
-    peerDependencies:
-      '@scalar/api-client-react': ^2.0.20
-      '@types/react': '*'
-      fumadocs-core: ^16.9.0
-      fumadocs-ui: ^16.9.0
-      json-schema-typed: '*'
-      react: ^19.2.0
-      react-dom: ^19.2.0
-    peerDependenciesMeta:
-      '@scalar/api-client-react':
-        optional: true
-      '@types/react':
-        optional: true
-      json-schema-typed:
         optional: true
 
   fumadocs-openapi@12.4.2:
@@ -8158,9 +8113,6 @@ packages:
   tailwind-merge@2.6.1:
     resolution: {integrity: sha512-Oo6tHdpZsGpkKG88HJ8RR1rg/RdnEkQEfMoEk2x1XRI3F1AxeU+ijRXpiVUF4UbLfcxxRGw6TbUINKYdWVsQTQ==}
 
-  tailwind-merge@3.7.0:
-    resolution: {integrity: sha512-XPPUyAc+cvspz3lHTcR/QgPfW2A0lv/xQNIjX3HGhLR+Nq2lHaLq5MtTesHn8GUr3W3DguT2KT5x3NVgRtYwmA==}
-
   tailwindcss-animate@1.0.7:
     resolution: {integrity: sha512-bl6mpH3T7I3UFxuvDEXLxy/VuFxBk5bbzplh7tXI68mwMokNYd1t9qPBHlnyTwfa4JGC4zP516I1hYYtQ/vspA==}
     peerDependencies:
@@ -9405,6 +9357,20 @@ snapshots:
       '@babel/helper-string-parser': 8.0.6
       '@babel/helper-validator-identifier': 8.0.6
 
+  '@base-ui/react@1.9.0(@date-fns/tz@1.5.0)(@types/react@18.3.31)(date-fns@4.4.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      '@base-ui/utils': 0.5.0(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@floating-ui/react-dom': 2.1.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@floating-ui/utils': 0.2.12
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      use-sync-external-store: 1.7.0(react@18.3.1)
+    optionalDependencies:
+      '@date-fns/tz': 1.5.0
+      '@types/react': 18.3.31
+      date-fns: 4.4.0
+
   '@base-ui/react@1.9.0(@date-fns/tz@1.5.0)(@types/react@18.3.31)(date-fns@4.4.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@babel/runtime': 7.29.7
@@ -9418,6 +9384,17 @@ snapshots:
       '@date-fns/tz': 1.5.0
       '@types/react': 18.3.31
       date-fns: 4.4.0
+
+  '@base-ui/utils@0.5.0(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      '@floating-ui/utils': 0.2.12
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      reselect: 5.3.0
+      use-sync-external-store: 1.7.0(react@18.3.1)
+    optionalDependencies:
+      '@types/react': 18.3.31
 
   '@base-ui/utils@0.5.0(@types/react@18.3.31)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
@@ -10130,6 +10107,17 @@ snapshots:
     optionalDependencies:
       '@types/react': 18.3.31
 
+  '@fumadocs/json-schema@0.3.0(@types/react@18.3.31)(json-schema-typed@8.0.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@fuma-translate/react': 1.0.2(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@scalar/json-magic': 0.15.7
+    optionalDependencies:
+      json-schema-typed: 8.0.2
+      react: 18.3.1
+    transitivePeerDependencies:
+      - '@types/react'
+      - react-dom
+
   '@fumadocs/json-schema@0.3.0(@types/react@18.3.31)(json-schema-typed@8.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@fuma-translate/react': 1.0.2(@types/react@18.3.31)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -10145,19 +10133,11 @@ snapshots:
 
   '@fumari/image-size@0.1.1': {}
 
-  '@fumari/json-schema-ts@0.0.2(json-schema-typed@8.0.2)':
-    dependencies:
-      esrap: 2.4.0
-    optionalDependencies:
-      json-schema-typed: 8.0.2
-    transitivePeerDependencies:
-      - '@typescript-eslint/types'
-
   '@fumari/json-schema-ts@1.0.2(json-schema-typed@8.0.2)':
     optionalDependencies:
       json-schema-typed: 8.0.2
 
-  '@fumari/stf@1.0.5(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@fumari/stf@1.1.1(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
@@ -13931,10 +13911,6 @@ snapshots:
     dependencies:
       estraverse: 5.3.0
 
-  esrap@2.4.0:
-    dependencies:
-      '@jridgewell/sourcemap-codec': 1.6.0
-
   esrecurse@4.3.0:
     dependencies:
       estraverse: 5.3.0
@@ -14262,33 +14238,35 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  fumadocs-openapi@10.10.3(74f63d5b1c5056ac167f51c2369d84e3):
+  fumadocs-openapi@12.4.2(78404056c66dfd4e15c901cb758604e6):
     dependencies:
-      '@fumari/json-schema-ts': 0.0.2(json-schema-typed@8.0.2)
-      '@fumari/stf': 1.0.5(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-accordion': 1.2.20(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-dialog': 1.1.23(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-select': 2.3.7(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@base-ui/react': 1.9.0(@date-fns/tz@1.5.0)(@types/react@18.3.31)(date-fns@4.4.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@fuma-translate/react': 1.0.2(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@fumadocs/json-schema': 0.3.0(@types/react@18.3.31)(json-schema-typed@8.0.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@fumari/json-schema-ts': 1.0.2(json-schema-typed@8.0.2)
+      '@fumari/stf': 1.1.1(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@scalar/json-magic': 0.15.7
+      '@scalar/openapi-upgrader': 0.4.4
       chokidar: 5.0.0
       class-variance-authority: 0.7.1
+      cn: 0.4.0
       fumadocs-core: 16.17.2(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@18.3.31)(lucide-react@0.485.0(react@18.3.1))(next@14.2.3(@babel/core@7.29.7(supports-color@7.2.0))(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.104.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(supports-color@7.2.0)
       fumadocs-ui: 16.17.2(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(fumadocs-core@16.17.2(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@18.3.31)(lucide-react@0.485.0(react@18.3.1))(next@14.2.3(@babel/core@7.29.7(supports-color@7.2.0))(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.104.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(supports-color@7.2.0))(next@14.2.3(@babel/core@7.29.7(supports-color@7.2.0))(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.104.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(supports-color@7.2.0)
       github-slugger: 2.0.0
       hast-util-to-jsx-runtime: 2.3.6(supports-color@7.2.0)
-      js-yaml: 4.3.2
       lucide-react: 1.56.0(@types/react@18.3.31)(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
       remark: 15.0.1(supports-color@7.2.0)
       remark-rehype: 11.1.2
       shiki: 4.5.0
-      tailwind-merge: 3.7.0
+      yaml: 2.9.1
     optionalDependencies:
       '@types/react': 18.3.31
       json-schema-typed: 8.0.2
     transitivePeerDependencies:
-      - '@types/react-dom'
-      - '@typescript-eslint/types'
+      - '@date-fns/tz'
+      - date-fns
       - supports-color
 
   fumadocs-openapi@12.4.2(@date-fns/tz@1.5.0)(@types/react@18.3.31)(date-fns@4.4.0)(fumadocs-core@16.17.2(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@18.3.31)(lucide-react@1.56.0(@types/react@18.3.31)(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@7.2.0))(fumadocs-ui@16.17.2(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(fumadocs-core@16.17.2(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@18.3.31)(lucide-react@1.56.0(@types/react@18.3.31)(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@7.2.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@7.2.0))(json-schema-typed@8.0.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@7.2.0):
@@ -17395,8 +17373,6 @@ snapshots:
   tabbable@6.5.0: {}
 
   tailwind-merge@2.6.1: {}
-
-  tailwind-merge@3.7.0: {}
 
   tailwindcss-animate@1.0.7(tailwindcss@3.4.19(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
