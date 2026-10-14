@@ -208,7 +208,7 @@ function PageContent() {
           <div className="w-full rounded-xl border border-zinc-200 dark:border-white/10" style={{ backdropFilter: 'blur(20px)' }}>
             <DefaultDemo />
           </div>
-          <div className="w-full flex items-center justify-center">
+          {/* <div className="w-full flex items-center justify-center">
             <TabsWithSlider
               tabs={landingTabs}
               activeTab="marketers"
@@ -218,7 +218,7 @@ function PageContent() {
               activeTabClassName="text-zinc-900 dark:text-white"
               tabClassName="text-zinc-500 dark:text-zinc-400 border-0 bg-transparent dark:bg-transparent"
             />
-          </div>
+          </div> */}
         </div>
         <div className="relative w-full flex flex-col items-center z-20">
           <div className="relative w-full flex items-center bg-white dark:bg-black z-0">

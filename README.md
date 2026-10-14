@@ -5,57 +5,33 @@
 # Falbor
 
 **A platform that helps businesses grow and increase their sales.**
-
+<img src="apps/falbor/public/hacking/logo-dark-styled.png" alt="Falbor Logo" width="320" />
 [Website](https://falbor.xyz) · [Upgrade Plans](https://falbor.xyz/upgrade) · [Contact](mailto:contact@falbor.xyz)
 
 </div>
+<br /><br />
 
----
+<section align="center">
+  Falbor is an Open Source AI Marketing Platform for developers, founders, and growth teams. Analyze competitors, track market trends, and automate your growth with full transparency and control.
+</section>
 
-## What is Falbor?
+<br /><br />
 
-Falbor is a website that helps businesses grow and increase their sales.
+## Links
 
-## How does it work?
+- [Website](https://falbor.xyz)
+- [Cloud Plans](https://falbor.xyz/upgrade)
+- [Contact](mailto:contact@falbor.xyz)
 
-You connect your website, and then the AI analyzes it. After that, you get a full workspace that gives you tips, updates, and more ways to grow your business.
+## Tech Stack
 
-It can help you figure out where to post on social media, and gives you an AI assistant that helps you and provides real feedback along the way.
+- **Framework:** Next.js, React, TypeScript, Tailwind CSS
+- **Database & ORM:** PostgreSQL, Drizzle ORM
+- **AI Integration:** Autonomous AI Agents
 
-## Why is Falbor open source?
+## Local Development
 
-We believe that being open with our code is the best way to build a good product. We want everyone to be able to contribute to Falbor and help us make it better.
-
-We also want everyone to be able to use Falbor for free, so we're making it open source.
-
-## Is it fully open source?
-
-Yes! From the frontend to the backend.
-
-## How can I use Falbor?
-
-You have two options:
-
-- **Use Falbor online:** Visit [falbor.xyz](https://falbor.xyz) and use it directly.
-- **Host it yourself:** Download the code and run Falbor on your own server.
-
-## Is Falbor free?
-
-**Cloud version:** Falbor offers different plans, which you can explore on our [Upgrade page](https://falbor.xyz/upgrade).
-
-**Self-hosted version:** You can run Falbor using your own infrastructure. However, you'll need to pay for the external APIs used by the project.
-
-## How to install
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/falbor-devs/falbor.git
-cd apps/falbor
-npm install
-npm run dev
-```
-
-## if you have any skill on coding, we will be happy if you contribute to Falbor!
-
-Built with ❤️ by [falbor developers](https://falbor.xyz/about)
+1. Clone the repository:
+   ```bash
+   git clone [https://github.com/falbor-devs/falbor.git](https://github.com/falbor-devs/falbor.git)
+   cd falbor

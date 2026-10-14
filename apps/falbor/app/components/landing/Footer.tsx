@@ -28,6 +28,7 @@ export default function Footer() {
               <Link href="/builder" className="text-sm hover:text-zinc-900 dark:hover:text-white transition-colors">Website Builder</Link>
               <Link href="/enterprise" className="text-sm hover:text-zinc-900 dark:hover:text-white transition-colors">Enterprise</Link>
               <Link href="/pricing" className="text-sm hover:text-zinc-900 dark:hover:text-white transition-colors">Pricing</Link>
+              <Link href="/marketers" className="text-sm hover:text-zinc-900 dark:hover:text-white transition-colors">For Marketers</Link>
               {/*status.falbor.xyz*/}<Link href="/" className="text-sm hover:text-zinc-900 dark:hover:text-white transition-colors">Status <Badge variant="secondary">Soon</Badge></Link>
             </div>
             <div className="flex flex-col gap-3">
@@ -62,6 +63,9 @@ export default function Footer() {
             </a>
             <a href="https://www.tiktok.com/@falbor.xyz" target="_blank" className="hover:scale-110 transition-transform">
               <img src="/landing/social/tiktok.png" alt="TikTok" className="w-6 h-6 object-contain" />
+            </a>
+            <a href="https://github.com/falbor-devs/falbor" target="_blank" className="hover:scale-110 transition-transform">
+              <img src="/icons/github.png" alt="GitHub" className="w-6 h-6 object-contain" />
             </a>
           </div>
           <a href="https://ufind.best/products/falbor" target="_blank" rel="noopener"><img src="https://ufind.best/badges/ufind-best-badge-light.svg" alt="Featured on ufind.best" width="150" className="dark:invert-0" /></a>
