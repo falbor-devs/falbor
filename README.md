@@ -2,11 +2,7 @@
 
 <img src="apps/falbor/public/README-preview.png" alt="Falbor Preview" width="100%" />
 
-<br /><br />
-
 <img src="apps/falbor/public/hacking/logo-dark-styled.png" alt="Falbor Logo" width="320" />
-
-<br /><br />
 
 </div>
 
@@ -44,7 +40,7 @@ npm install
 
 ### 2. Database Setup
 
-The project uses Supabase for database management. Create a `.env` file in the `apps/falbor` directory with the following variables:
+The project uses Neon for database management. Create a `.env` file in the `apps/falbor` directory with the following variables:
 
 ```bash
 DATABASE_URL="postgresql://postgres.xxxx:[EMAIL_ADDRESS]:5432/postgres"
@@ -94,7 +90,7 @@ Start the development server with:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the app.
+Open [http://localhost:3000](http://localhost:3000) in your browser to view the live web.
 
 ---
 
@@ -102,11 +98,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to view the 
 
 The project utilizes three AI providers:
 
-1.  **OpenAI:** For general AI assistant capabilities.
+1.  **OpenAI:** For general AI agent capabilities.
 2.  **Anthropic:** For the autonomous AI agents that perform market research and competitor analysis.
 3.  **DeepSeek:** Also used for AI agents, potentially for alternative analysis paths.
 
-Make sure all API keys are correctly configured in `.env.local` to ensure the AI features work as expected.
+Make sure all API keys are correctly configured in `.env` to ensure the AI features work as expected.
 
 ## 🤝 Contributing
 
