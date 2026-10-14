@@ -38,6 +38,7 @@ export default function Footer() {
             <div className="flex flex-col gap-3">
               <h4 className="text-zinc-900 dark:text-white font-medium mb-1">Resources</h4>
               <Link href="/blog" className="text-sm hover:text-zinc-900 dark:hover:text-white transition-colors">Blog</Link>
+              <Link href="https://docs.falbor.xyz" className="text-sm hover:text-zinc-900 dark:hover:text-white transition-colors">Docs</Link>
               <Link href="https://discord.gg/QNjRTTqjQd" className="text-sm hover:text-zinc-900 dark:hover:text-white transition-colors">Discord</Link>
             </div>
             <div className="flex flex-col gap-3">

@@ -46,8 +46,8 @@ export default function DocsLayout({
               {children}
             </main>
           </div>
-
-          <Footer />
+          {/* 
+          <Footer /> */}
         </div>
       </body>
     </html>
