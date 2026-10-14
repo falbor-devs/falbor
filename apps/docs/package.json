@@ -9,14 +9,22 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
     "clsx": "^2.1.1",
-    "fumadocs-core": "^16.17.1",
-    "fumadocs-openapi": "^12.4.1",
-    "fumadocs-ui": "^16.17.1",
+    "fumadocs-core": "16.6.7",
+    "fumadocs-openapi": "10.3.13",
+    "fumadocs-ui": "16.6.7",
     "lucide-react": "^0.485.0",
-    "next": "^14.2.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "tailwind-merge": "^2.6.1"
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5.9.3"
   }
 }
