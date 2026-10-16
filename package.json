@@ -2,6 +2,7 @@
   "name": "falbor-monorepo",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@12.4.1",
   "workspaces": [
     "apps/*"
   ],

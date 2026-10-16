@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "outputDirectory": ".next"
+  "buildCommand": "pnpm --filter falbor build",
+  "installCommand": "pnpm install",
+  "outputDirectory": "apps/falbor/.next"
 }

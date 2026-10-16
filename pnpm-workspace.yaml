@@ -9,12 +9,12 @@ overrides:
 
 allowBuilds:
   '@google/genai': false
-  '@parcel/watcher': false
-  bufferutil: false
+  '@parcel/watcher': true
+  bufferutil: true
   core-js: true
   esbuild: true
-  isolated-vm: false
-  msgpackr-extract: false
-  protobufjs: false
+  isolated-vm: true
+  msgpackr-extract: true
+  protobufjs: true
   puppeteer: false
   unrs-resolver: true
