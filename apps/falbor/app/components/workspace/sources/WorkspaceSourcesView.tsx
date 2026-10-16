@@ -61,7 +61,7 @@ export function WorkspaceSourcesView({ workspaceId }: WorkspaceSourcesViewProps)
         loading={loading}
       />
 
-      <SourcesTable sources={filteredSources} loading={loading} />
+      <SourcesTable sources={filteredSources} loading={loading} workspaceId={workspaceId} />
     </div>
   );
 }

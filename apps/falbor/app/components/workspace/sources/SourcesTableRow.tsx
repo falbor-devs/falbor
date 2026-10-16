@@ -1,15 +1,18 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import classNames from 'classnames';
 import type { SourceItem } from '~/lib/actions/sources';
 import { TableRow, TableCell } from '~/components/ui/Table';
 
 interface SourcesTableRowProps {
   source: SourceItem;
+  workspaceId: string;
 }
 
-const PLATFORM_ICONS: Record<string, { icon: string; img?: string }> = {
+export const PLATFORM_ICONS: Record<string, { icon: string; img?: string }> = {
   Reddit: { icon: 'i-ph:reddit-logo text-orange-500', img: '/landing/social/reddit.png' },
   Facebook: { icon: 'i-ph:facebook-logo text-blue-600', img: '/landing/social/facebook.png' },
   LinkedIn: { icon: 'i-ph:linkedin-logo text-blue-500', img: '/landing/social/linkdin.png' },
@@ -20,9 +23,11 @@ const PLATFORM_ICONS: Record<string, { icon: string; img?: string }> = {
   Other: { icon: 'i-ph:globe text-gray-400' },
 };
 
-export function SourcesTableRow({ source }: SourcesTableRowProps) {
+export function SourcesTableRow({ source, workspaceId }: SourcesTableRowProps) {
+  const router = useRouter();
   const platformConfig = PLATFORM_ICONS[source.platform] || PLATFORM_ICONS.Other;
   const [imgError, setImgError] = React.useState(false);
+  const detailHref = source.id ? `/workspace/${workspaceId}/sources/${source.id}` : null;
   const getFaviconUrl = (targetUrl: string) => {
     try {
       const domain = new URL(targetUrl).hostname;
@@ -35,7 +40,10 @@ export function SourcesTableRow({ source }: SourcesTableRowProps) {
   const imgSrc = platformConfig.img || (source.url ? getFaviconUrl(source.url) : null);
 
   return (
-    <TableRow>
+    <TableRow
+      className={detailHref ? 'cursor-pointer' : undefined}
+      onClick={() => detailHref && router.push(detailHref)}
+    >
       <TableCell className="font-medium">
         <div className="flex items-center gap-2.5">
           {imgSrc && !imgError ? (
@@ -48,7 +56,17 @@ export function SourcesTableRow({ source }: SourcesTableRowProps) {
           ) : (
             <i className={classNames(platformConfig.icon, "text-xl shrink-0")} />
           )}
-          <span className="truncate max-w-[220px] sm:max-w-xs">{source.title}</span>
+          {detailHref ? (
+            <Link
+              href={detailHref}
+              onClick={(e) => e.stopPropagation()}
+              className="block truncate max-w-[220px] sm:max-w-xs hover:text-accent-500 hover:underline"
+            >
+              {source.title}
+            </Link>
+          ) : (
+            <span className="truncate max-w-[220px] sm:max-w-xs">{source.title}</span>
+          )}
         </div>
       </TableCell>
 
@@ -85,6 +103,7 @@ export function SourcesTableRow({ source }: SourcesTableRowProps) {
           href={source.url}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-500 hover:text-accent-600 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
         >
           {source.platform === 'Contacts' ? 'Contact Profile' : 'Visit Channel'}

@@ -8,9 +8,10 @@ import { Table, TableHeader, TableBody, TableHead, TableRow } from '~/components
 interface SourcesTableProps {
   sources: SourceItem[];
   loading: boolean;
+  workspaceId: string;
 }
 
-export function SourcesTable({ sources, loading }: SourcesTableProps) {
+export function SourcesTable({ sources, loading, workspaceId }: SourcesTableProps) {
   if (loading) {
     return (
       <div className="w-full space-y-3 py-6">
@@ -34,22 +35,24 @@ export function SourcesTable({ sources, loading }: SourcesTableProps) {
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Channel / Community</TableHead>
-          <TableHead>Platform</TableHead>
-          <TableHead>Est. Audience</TableHead>
-          <TableHead>Match %</TableHead>
-          <TableHead>Engagement Strategy</TableHead>
-          <TableHead className="text-right">Action</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {sources.map((source, index) => (
-          <SourcesTableRow key={source.id || index} source={source} />
-        ))}
-      </TableBody>
-    </Table>
+    <div className="-mt-6 rounded-4xl">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Channel / Community</TableHead>
+            <TableHead>Platform</TableHead>
+            <TableHead>Est. Audience</TableHead>
+            <TableHead>Match %</TableHead>
+            <TableHead>Engagement Strategy</TableHead>
+            <TableHead className="text-right">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sources.map((source, index) => (
+            <SourcesTableRow key={source.id || index} source={source} workspaceId={workspaceId} />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

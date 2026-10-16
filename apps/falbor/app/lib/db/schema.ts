@@ -1126,6 +1126,22 @@ export const workspaceSources = pgTable("workspace_sources", {
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const sourcePosts = pgTable("source_posts", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: varchar("workspace_id", { length: 255 }).notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    sourceId: uuid("source_id").notNull().references(() => workspaceSources.id, { onDelete: "cascade" }),
+    platform: text("platform").notNull(),
+    title: text("title").notNull(),
+    hook: text("hook"),
+    body: text("body").notNull(),
+    callToAction: text("call_to_action"),
+    hashtags: jsonb("hashtags").default("[]"),
+    status: text("status").default("draft").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const workspaceSourceFolders = pgTable("workspace_source_folders", {
     id: uuid("id").defaultRandom().primaryKey(),
     workspaceId: varchar("workspace_id", { length: 255 }).notNull().references(() => workspaces.id, { onDelete: "cascade" }),

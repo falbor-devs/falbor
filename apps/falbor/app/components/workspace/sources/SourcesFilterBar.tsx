@@ -30,7 +30,7 @@ export function SourcesFilterBar({
   }, []);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 my-4">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 pt-3 pb-8 mt-[10px] rounded-t-2xl bg-[#EBEBEB] dark:bg-[#282828]">
       <div className="flex items-center gap-2">
         <Dropdown
           align="start"
@@ -61,8 +61,8 @@ export function SourcesFilterBar({
           <i className={`i-ph:arrows-clockwise text-xs text-falbor-elements-textSecondary ${loading ? 'animate-spin' : ''}`} />
           <span>{loading ? 'Rescanning...' : 'Rescan'}</span>
         </button>
-
-        <Dropdown
+        {/* Coming Soon */}
+        {/* <Dropdown
           align="start"
           trigger={
             <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-falbor-elements-borderColor bg-falbor-elements-background-depth-1 text-falbor-elements-textPrimary hover:bg-falbor-elements-background-depth-2 transition-colors">
@@ -149,7 +149,7 @@ export function SourcesFilterBar({
               ))
             )}
           </div>
-        </Dropdown>
+        </Dropdown> */}
       </div>
 
       <div className="relative w-full sm:w-64">

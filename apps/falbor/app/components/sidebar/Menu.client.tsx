@@ -248,6 +248,11 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
     return localStorage.getItem('falbor_menu_ads_open') === 'true';
   });
 
+  const [isSourcesOpen, setIsSourcesOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('falbor_menu_sources_open') === 'true';
+  });
+
   const [isContactsOpen, setIsContactsOpen] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('falbor_menu_contacts_open') === 'true';
@@ -291,6 +296,14 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
     setIsAdsOpen((prev) => {
       const next = !prev;
       localStorage.setItem('falbor_menu_ads_open', String(next));
+      return next;
+    });
+  };
+
+  const toggleSourcesOpen = () => {
+    setIsSourcesOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem('falbor_menu_sources_open', String(next));
       return next;
     });
   };
@@ -985,34 +998,80 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                       })()}
                       {(() => {
                         const activeWsId = pathname?.split('/')[2];
-                        const href = activeWsId ? `/workspace/${activeWsId}/sources` : '/sources';
-                        const isSourcesActive = pathname === href;
+                        const sourcesHref = activeWsId ? `/workspace/${activeWsId}/sources` : '/sources';
+                        const channelsHref = sourcesHref;
+                        const competitorsHref = activeWsId ? `/workspace/${activeWsId}/competitors` : '/competitors';
+                        const signalsHref = activeWsId ? `/workspace/${activeWsId}/signal-radar` : '/signal-radar';
+                        const mentionsHref = activeWsId ? `/workspace/${activeWsId}/mentions` : '/mentions';
+                        const isChannelsActive = pathname?.includes('/sources');
+                        const isCompetitorsActive = pathname?.includes('/competitors');
+                        const isRadarActive = pathname?.includes('/signal-radar');
+                        const isMentionsActive = pathname?.includes('/mentions');
+                        const isSourcesSectionActive = isChannelsActive || isCompetitorsActive || isRadarActive || isMentionsActive;
+
                         return (
-                          <Link href={href}>
-                            <button className={classNames(
-                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors",
-                              isSourcesActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                            )}>
-                              <div className="i-ph:share-network w-4 h-4 mr-2" />
+                          <div className="mt-1">
+                            <button
+                              onClick={toggleSourcesOpen}
+                              className={classNames(
+                                "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors",
+                                isSourcesSectionActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
+                              )}
+                            >
+                              <div className={classNames(
+                                "w-4 h-4 mr-2 transition-transform duration-200 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400",
+                                isSourcesOpen ? "i-ph:caret-down" : "i-ph:caret-right"
+                              )} />
                               Sources
                             </button>
-                          </Link>
-                        );
-                      })()}
-                      {(() => {
-                        const activeWsId = pathname?.split('/')[2];
-                        const href = activeWsId ? `/workspace/${activeWsId}/competitors` : '/competitors';
-                        const isCompetitorsActive = pathname?.includes('/competitors');
-                        return (
-                          <Link href={href}>
-                            <button className={classNames(
-                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors mt-1",
-                              isCompetitorsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                            )}>
-                              <div className="i-ph:sword w-4 h-4 mr-2" />
-                              Competitors
-                            </button>
-                          </Link>
+                            {isSourcesOpen && (
+                              <div className="ml-4 pl-3 border-l border-gray-300 dark:border-gray-700 mt-1 space-y-1">
+                                <Link href={channelsHref}>
+                                  <button className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                    isChannelsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
+                                  )}>
+                                    <div className="i-ph:hash w-3.5 h-3.5 mr-2" />
+                                    Channels
+                                  </button>
+                                </Link>
+                                <Link href={signalsHref}>
+                                  <button className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                    isRadarActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
+                                  )}>
+                                    <div className="i-ph:broadcast w-3.5 h-3.5 mr-2" />
+                                    Signals
+                                  </button>
+                                </Link>
+                                <Link href={mentionsHref}>
+                                  <button className={classNames(
+                                    "flex items-center justify-between w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                    isMentionsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
+                                  )}>
+                                    <div className="flex items-center">
+                                      <div className="i-ph:at w-3.5 h-3.5 mr-2" />
+                                      Mentions
+                                    </div>
+                                    {unreadMentionsCount > 0 && !isMentionsActive && (
+                                      <span className="bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                        {unreadMentionsCount}
+                                      </span>
+                                    )}
+                                  </button>
+                                </Link>
+                                <Link href={competitorsHref}>
+                                  <button className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                    isCompetitorsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
+                                  )}>
+                                    <div className="i-ph:sword w-3.5 h-3.5 mr-2" />
+                                    Competitors
+                                  </button>
+                                </Link>
+                              </div>
+                            )}
+                          </div>
                         );
                       })()}
                       {(() => {
@@ -1026,7 +1085,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                               isAiAeoActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
                             )}>
                               <div className="i-ph:robot w-4 h-4 mr-2" />
-                              Visibility
+                              AEO
                             </button>
                           </Link>
                         );
@@ -1063,7 +1122,6 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                                 "w-4 h-4 mr-2 transition-transform duration-200 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400",
                                 isContactsOpen ? "i-ph:caret-down" : "i-ph:caret-right"
                               )} />
-                              <div className="i-ph:address-book w-4 h-4 mr-2" />
                               Contacts
                             </button>
                             {isContactsOpen && (
@@ -1091,45 +1149,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                           </div>
                         );
                       })()}
-                      {(() => {
-                        const activeWsId = pathname?.split('/')[2];
-                        const href = activeWsId ? `/workspace/${activeWsId}/signal-radar` : '/signal-radar';
-                        const isRadarActive = pathname?.includes('/signal-radar');
-                        return (
-                          <Link href={href}>
-                            <button className={classNames(
-                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors mt-1",
-                              isRadarActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                            )}>
-                              <div className="i-ph:broadcast w-4 h-4 mr-2" />
-                              Signals
-                            </button>
-                          </Link>
-                        );
-                      })()}
-                      {(() => {
-                        const activeWsId = pathname?.split('/')[2];
-                        const href = activeWsId ? `/workspace/${activeWsId}/mentions` : '/mentions';
-                        const isMentionsActive = pathname?.includes('/mentions');
-                        return (
-                          <Link href={href}>
-                            <button className={classNames(
-                              "flex items-center justify-between w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors mt-1",
-                              isMentionsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                            )}>
-                              <div className="flex items-center">
-                                <div className="i-ph:at w-4 h-4 mr-2" />
-                                Mentions
-                              </div>
-                              {unreadMentionsCount > 0 && !isMentionsActive && (
-                                <span className="bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                                  {unreadMentionsCount}
-                                </span>
-                              )}
-                            </button>
-                          </Link>
-                        );
-                      })()}
+
                       {(() => {
                         const activeWsId = pathname?.split('/')[2];
                         const href = activeWsId ? `/workspace/${activeWsId}/vibe` : '/';
@@ -1218,7 +1238,6 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                                 "w-4 h-4 mr-2 transition-transform duration-200 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400",
                                 isAdsOpen ? "i-ph:caret-down" : "i-ph:caret-right"
                               )} />
-                              <div className="i-ph:megaphone w-4 h-4 mr-2" />
                               Marketing
                             </button>
                             {isAdsOpen && (
@@ -1259,7 +1278,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                                     Pitch <Badge className='bg-[#0099ff]/20 text-[#0099ff] ml-1 rounded-md'>Beta</Badge>
                                   </button>
                                 </Link>
-                                <Link href={activeWsId ? `/workspace/${activeWsId}/google-ads` : '/'}>
+                                {/* <Link href={activeWsId ? `/workspace/${activeWsId}/google-ads` : '/'}>
                                   <button className={classNames(
                                     "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
                                     pathname?.includes('/google-ads') ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
@@ -1267,7 +1286,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                                     <img src="/icons/google.svg" alt="" className='w-3.5 h-3.5 mr-2' />
                                     Google Ads <Badge>Coming Soon</Badge>
                                   </button>
-                                </Link>
+                                </Link> */}
                                 <Link href={activeWsId ? `/workspace/${activeWsId}/meta-ads` : '/'}>
                                   <button className={classNames(
                                     "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
@@ -1282,7 +1301,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                           </div>
                         );
                       })()}
-                      {(() => {
+                      {/* {(() => {
                         const activeWsId = pathname?.split('/')[2];
                         const href = activeWsId ? `/workspace/${activeWsId}/product` : '/workspace';
                         const isProductsActive = pathname?.includes('/product');
@@ -1391,7 +1410,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                             )}
                           </div>
                         );
-                      })()}
+                      })()} */}
                     </div>
                   </div>
                   {(() => {

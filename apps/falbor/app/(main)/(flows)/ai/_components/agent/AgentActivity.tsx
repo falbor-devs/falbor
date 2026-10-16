@@ -929,7 +929,7 @@ function AgentEventCard({
       <div className="py-1 text-sm text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none">
         <ReactMarkdown
           components={{
-            img: ({ ...props }) => (
+            img: ({ node, ref, ...props }) => (
               <div className="my-2 flex justify-start max-w-full">
                 <img
                   {...props}
@@ -968,7 +968,7 @@ function AgentEventCard({
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown
                 components={{
-                  img: ({ ...props }) => (
+                  img: ({ node, ref, ...props }) => (
                     <div className="my-2 flex justify-start max-w-full">
                       <img
                         {...props}

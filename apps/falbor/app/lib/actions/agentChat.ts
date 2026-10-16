@@ -123,6 +123,17 @@ export async function sendAgentMessage(text: string, opts: { apiText?: string } 
                         html: `\`\`\`mention_posts\n${JSON.stringify(args?.posts || [], null, 2)}\n\`\`\``,
                         status: 'completed'
                     });
+                } else if (name === 'ui_generate_source_post') {
+                    const existingEvent = [...aiSidebarStore.events.get()].reverse().find((e) => e.title === 'Source Post Generated');
+                    const targetId = existingEvent?.id || v4();
+
+                    aiSidebarStore.upsertEvent({
+                        id: targetId,
+                        type: 'text',
+                        title: 'Source Post Generated',
+                        html: `\`\`\`source_post\n${JSON.stringify(args || {}, null, 2)}\n\`\`\``,
+                        status: 'completed'
+                    });
                 } else if (name === 'run_browser_task') {
                     const existingBrowserEvent = [...aiSidebarStore.events.get()].reverse().find((e) => e.type === 'browser');
                     const targetId = existingBrowserEvent?.id || v4();

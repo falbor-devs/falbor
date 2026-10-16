@@ -25,7 +25,7 @@
 ## Tech Stack
 
 - **Framework:** Next.js, React, TypeScript, Tailwind CSS
-- **Database & ORM:** PostgreSQL (Neon), Supabase, Drizzle ORM
+- **Database & ORM:** PostgreSQL (Neon), Drizzle ORM
 - **AI Integration:** OpenAI, Anthropic, DeepSeek AI Agents
 
 ---
@@ -44,7 +44,7 @@ npm install
 
 ### 2. Database Setup
 
-The project uses Supabase for database management. Create a `.env` file in the `apps/falbor` directory with the following variables:
+Create a `.env` file in the `apps/falbor` directory with the following variables:
 
 ```bash
 DATABASE_URL="postgresql://postgres.xxxx:[EMAIL_ADDRESS]:5432/postgres"
@@ -106,7 +106,7 @@ The project utilizes three AI providers:
 2.  **Anthropic:** For the autonomous AI agents that perform market research and competitor analysis.
 3.  **DeepSeek:** Also used for AI agents, potentially for alternative analysis paths.
 
-Make sure all API keys are correctly configured in `.env.local` to ensure the AI features work as expected.
+Make sure all API keys are correctly configured in `.env` to ensure the AI features work as expected.
 
 ## 🤝 Contributing
 

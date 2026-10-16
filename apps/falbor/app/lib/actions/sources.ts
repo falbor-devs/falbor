@@ -40,6 +40,26 @@ export async function getWorkspaceSources(workspaceId: string): Promise<SourceIt
   return sources as SourceItem[];
 }
 
+export async function getWorkspaceSource(workspaceId: string, sourceId: string): Promise<SourceItem | null> {
+  const userId = await getUserId();
+  if (!userId) return null;
+
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sourceId)) {
+    return null;
+  }
+
+  const source = await db.query.workspaceSources.findFirst({
+    where: (workspaceSources, { eq, and }) =>
+      and(
+        eq(workspaceSources.id, sourceId),
+        eq(workspaceSources.workspaceId, workspaceId),
+        eq(workspaceSources.userId, userId),
+      ),
+  });
+
+  return (source as SourceItem) || null;
+}
+
 export async function generateWorkspaceSources(workspaceId: string): Promise<SourceItem[]> {
   const userId = await getUserId();
   if (!userId) throw new Error('Unauthorized');

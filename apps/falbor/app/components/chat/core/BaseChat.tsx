@@ -1,6 +1,7 @@
 'use client';
 import { useParams, usePathname } from "next/navigation";
 import { WorkspaceSourcesView } from '~/components/workspace/sources/WorkspaceSourcesView';
+import { WorkspaceSourceDetailView } from '~/components/workspace/sources/WorkspaceSourceDetailView';
 import { WorkspaceCanvasView } from '~/components/workspace/canvas/WorkspaceCanvasView';
 import { WorkspaceTrendsView } from '~/components/workspace/trends/WorkspaceTrendsView';
 import { WorkspaceBudgetView } from '~/components/workspace/budget/WorkspaceBudgetView';
@@ -206,6 +207,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const isCompetitorsPage = pathname?.includes('/competitors');
     const isCanvasPage = pathname?.includes('/canvas');
     const isSourcesPage = pathname?.includes('/sources');
+    const sourceChannelMatch = pathname?.match(/\/sources\/([^\/]+)/);
+    const sourceChannelId = sourceChannelMatch ? sourceChannelMatch[1] : '';
+    const isSourceDetailPage = isSourcesPage && !!sourceChannelId;
     const isProductPage = pathname?.includes('/product') && !pathname?.includes('/product-deck');
     const isVibePage = pathname?.includes('/vibe');
     const isBudgetMarketPage = pathname?.includes('/budget/market');
@@ -733,6 +737,8 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                   <WorkspaceAiAeoView workspaceId={workspaceId} />
                 ) : isCompetitorsPage ? (
                   <WorkspaceCompetitorsView workspaceId={workspaceId} />
+                ) : isSourceDetailPage ? (
+                  <WorkspaceSourceDetailView workspaceId={workspaceId} channelId={sourceChannelId} />
                 ) : isSourcesPage ? (
                   <WorkspaceSourcesView workspaceId={workspaceId} />
                 ) : isCanvasPage ? (

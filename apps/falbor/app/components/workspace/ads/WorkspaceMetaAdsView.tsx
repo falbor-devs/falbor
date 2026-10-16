@@ -102,7 +102,8 @@ export function WorkspaceMetaAdsView({ workspaceId }: WorkspaceMetaAdsViewProps)
     setIsConnecting(true);
     const state = btoa(JSON.stringify({ workspaceId, returnTo: 'meta-ads' }));
     const appId = process.env.NEXT_PUBLIC_META_APP_ID;
-    const redirectUri = encodeURIComponent(`${window.location.origin.replace(/\/$/, '')}/api/auth/meta/callback`);
+    const origin = window.location.origin.replace(/\/$/, '');
+    const redirectUri = encodeURIComponent(`${origin}/api/auth/meta/callback`);
     const scope = 'ads_management,ads_read,business_management';
     const url = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}&response_type=code`;
     window.location.href = url;

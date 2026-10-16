@@ -33,9 +33,16 @@ export async function GET(request: Request) {
   const appSecret = process.env.META_APP_SECRET;
 
   // Standardize redirect URI to match exact origin without extra query parameters or hash fragments
-  const envRedirect = process.env.META_REDIRECT_URI;
   const requestUrl = new URL(request.url);
-  const redirectUri = envRedirect || `${requestUrl.protocol}//${requestUrl.host}/api/auth/meta/callback`;
+  const getHeaderHost = (name: string) => request.headers.get(name);
+  const forwardedHost = getHeaderHost('x-forwarded-host');
+  const forwardedProto = getHeaderHost('x-forwarded-proto');
+  const host = forwardedHost?.split(',')[0]?.trim() || requestUrl.host;
+  const protocol = forwardedProto?.split(',')[0]?.trim() || requestUrl.protocol.replace(':', '');
+  const normalizedHost = host.replace(/\/$/, '');
+  const baseRedirectUri = `${protocol}://${normalizedHost}/api/auth/meta/callback`;
+  const envRedirect = process.env.META_REDIRECT_URI;
+  const redirectUri = (envRedirect || baseRedirectUri).replace(/\/$/, '');
 
   if (!appId || !appSecret) {
     return new Response('Meta App credentials not configured', { status: 500 });

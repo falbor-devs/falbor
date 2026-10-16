@@ -5,7 +5,7 @@ import { uiTools, UI_PROMPT } from './uiTools';
 import { createBrowserUseTools } from './browserUseTool';
 import { searchProspectsWithTomba } from '~/lib/agent/growthTools';
 import { db } from '~/lib/db';
-import { agentProspects, signalPosts } from '~/lib/db/schema';
+import { agentProspects, signalPosts, sourcePosts, workspaceSources } from '~/lib/db/schema';
 
 export type AgentChannel = 'web' | 'telegram';
 export type AgentHistoryMessage = { role: 'user' | 'assistant'; content: string };
@@ -113,6 +113,7 @@ INSTRUCTIONS:
 13. CRITICAL PRODUCT DECK IMPROVEMENT RULE: When requested to improve or generate presentation deck content or when [CONTEXT: PRODUCT_DECK_IMPROVEMENT_MCP] is provided, use \`presentation_get\` to retrieve the current pitch deck slides, refine or edit specific slide content in clean HTML format, and call \`presentation_update\` to save the updated deck directly.
 14. CRITICAL SIGNAL RADAR RULE: When [CONTEXT: SIGNAL_RADAR] is provided, you MUST: (a) call \`read_workspace\` to understand the product's main problem and target audience, (b) call \`serp_search\` multiple times — once per platform — using queries like "site:reddit.com {problem}" or "{problem} discussion site:linkedin.com" to find REAL posts where people complain about the exact problem the product solves, (c) collect 5-10 real, unique posts per platform (aim for 15-25 total), each with a real URL, real author handle, real engagement numbers if visible, and a short excerpt of the actual content, (d) call \`ui_update_signal_posts\` EXACTLY ONCE with all found posts. CRITICAL: Do NOT call \`tomba_search_prospects\` or any email/contact tool for this task. Do NOT fabricate URLs — only use URLs returned by \`serp_search\`. Do NOT ask for permission.
 15. CRITICAL BRAND MENTIONS RULE: When [CONTEXT: BRAND_MENTIONS] is provided, you MUST: (a) Identify the exact product/company name (e.g., "${productName}"). (b) Call \`serp_search\` ONLY for the user's selected platforms (e.g., "site:reddit.com ${productName}" or "site:twitter.com ${productName}"). (c) STRICT FILTERING: You MUST ONLY include posts where the title or snippet explicitly contains the exact product or company name. If search results do not explicitly mention and discuss the product/company by name, DISCARD THEM. Do NOT output generic search hits or unrelated site results. (d) Call \`ui_update_brand_mention_posts\` EXACTLY ONCE with only verified explicit mentions. If no posts explicitly mention the company name on the selected platforms, return 0 posts.
+16. CRITICAL SOURCE POST RULE: When [CONTEXT: SOURCE_POST] is provided, you MUST write ONE authentic, human-sounding post tailored to the given [SOURCE_ID], [PLATFORM] and source details. First briefly analyze the source (its platform, the community/profile it represents, and the provided strategy notes) together with the product context from \`read_workspace\`, and respect the norms and tone of that platform. Then call \`ui_generate_source_post\` EXACTLY ONCE with sourceId, platform, title, hook, body, callToAction and hashtags. The post must not sound like an ad: it should read like a real person sharing something genuinely useful, with a scroll-stopping title, a strong hook, a well-structured Markdown body (short paragraphs, bullet points, concrete value), a clear call to action and relevant hashtags. Pass the body as clean Markdown WITHOUT code fences.
 
 ${channelRules}`;
 }
@@ -359,6 +360,49 @@ export async function buildAgentTools(workspace: any, selectedMCPs: string[] = [
                     console.error('Failed to persist brand mention posts to DB:', err);
                 }
                 return JSON.stringify({ success: true, count: posts.length, message: 'Brand mention posts updated in the UI and database. Workflow complete. Do NOT call ui_update_brand_mention_posts again.' });
+            }
+        }),
+        ui_generate_source_post: tool({
+            description: 'Save a generated social post for a specific acquisition source (channel) to the database and show it in the UI. Call this EXACTLY ONCE after writing the post.',
+            parameters: z.object({
+                sourceId: z.string().describe('The SOURCE_ID from the [CONTEXT: SOURCE_POST] marker.'),
+                platform: z.string().describe('Platform the post is written for, e.g. Reddit, LinkedIn, Twitter.'),
+                title: z.string().describe('Scroll-stopping post title.'),
+                hook: z.string().optional().describe('The opening hook line.'),
+                body: z.string().describe('Full post body in clean Markdown, without code fences.'),
+                callToAction: z.string().optional().describe('The call to action line.'),
+                hashtags: z.array(z.string()).optional().default([]).describe('Relevant hashtags without the # symbol.'),
+            }),
+            execute: async (args) => {
+                try {
+                    if (!workspace?.id || !userId || !args.sourceId) {
+                        return JSON.stringify({ success: false, error: 'Missing workspace, user or sourceId.' });
+                    }
+                    const { eq, and } = require('drizzle-orm');
+                    const source = await db.query.workspaceSources.findFirst({
+                        where: and(eq(workspaceSources.id, args.sourceId), eq(workspaceSources.workspaceId, workspace.id)),
+                    });
+                    if (!source) {
+                        return JSON.stringify({ success: false, error: 'Unknown source for this workspace.' });
+                    }
+                    const crypto = require('crypto');
+                    await db.insert(sourcePosts).values({
+                        id: crypto.randomUUID(),
+                        workspaceId: workspace.id,
+                        userId,
+                        sourceId: args.sourceId,
+                        platform: args.platform,
+                        title: args.title,
+                        hook: args.hook || null,
+                        body: args.body,
+                        callToAction: args.callToAction || null,
+                        hashtags: args.hashtags || [],
+                        status: 'draft',
+                    });
+                } catch (err) {
+                    console.error('Failed to persist source post to DB:', err);
+                }
+                return JSON.stringify({ success: true, message: 'Source post saved. Workflow complete. Do NOT call ui_generate_source_post again.' });
             }
         }),
         ui_update_agent_contact_table: tool({
