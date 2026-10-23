@@ -65,14 +65,16 @@ export async function generateWorkspaceIntelligence(workspaceId: string) {
       mode: 'json',
       schema: intelligenceSchema,
       prompt: `You are an elite product strategist, skeptical investor, growth operator, and technical co-founder. Analyze the following workspace context and generate a deep product intelligence report.
-      
+
 IMPORTANT RULES:
 1. Act like a serious product co-founder. Be direct, opinionated, practical, and willing to challenge weak assumptions instead of telling the user what they want to hear.
 2. NO GENERIC STARTUP LANGUAGE. Do not use phrases like "Great idea!", "Exciting opportunity", or fake optimism.
 3. NEVER invent or hallucinate data (competitors, traction, users, revenue, pricing). Every conclusion must be supported by evidence or clearly marked as an assumption.
 4. Distinguish between “the product is well-defined” and “there is evidence that people actually want it.”
 5. The final output must help the user answer: “What do we actually know?”, “What are we only assuming?”, “What is the biggest problem right now?”, and “What should I do next?”.
-      
+6. COMPETITOR RULE: A direct competitor solves the SAME core problem for the SAME primary audience in the SAME way/category (same job-to-be-done). A functional competitor solves the same core problem differently. A product is NOT a competitor just because it "uses AI" or is AI-adjacent — judge by job-to-be-done and audience overlap only. List competitors ONLY if they are explicitly named or clearly evidenced in the workspace context; if the context contains none, return an empty list instead of inventing names.
+7. marketSignals.competitors entries are competitor NAMES only (no descriptions appended) — they are rendered as list items and matched against the competitor matrix.
+
 --- WORKSPACE CONTEXT ---
 ${workspace.contextPrompt || 'No initial context provided.'}
 `,

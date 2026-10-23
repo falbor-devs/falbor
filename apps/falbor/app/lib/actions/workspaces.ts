@@ -2,12 +2,13 @@
 
 import { db } from '~/lib/db'
 import { v4 } from 'uuid'
-import { workspaces } from '~/lib/db/schema'
+import { agentTasks, agents, workspaces } from '~/lib/db/schema'
 import { eq, desc, and } from 'drizzle-orm'
 import { getAuthUserDetails } from '~/lib/visual-editor/queries'
 import { getAccessibleWorkspace } from '~/lib/workspace-build/access'
 import { triggerWorkspaceBuild } from '~/lib/workspace-build/orchestrator'
 import { ensureBuild } from '~/lib/workspace-build/state'
+import { appendAgentTaskEvent } from '~/lib/agents/task-queue'
 
 import { BILLING_CONFIG, PlanId } from '~/lib/billing/config'
 
@@ -56,6 +57,20 @@ export async function createWorkspace(name: string = "Untitled Workspace") {
     id,
     userId: userAuth.id,
     name,
+  });
+  await db.insert(agents).values({
+    workspaceId: id,
+    userId: userAuth.id,
+    name: 'Falbor Agent',
+    role: 'Chief of Staff',
+    goal: 'Coordinate workspace work, research, and execution through authorized tools and collaborating agents.',
+    instructions: 'Act as the user\'s default Falbor workspace agent. Use the available tools, inspect real results, collaborate through persisted tasks, and report verified outcomes separately from completed actions.',
+    memory: '',
+    tools: ['Web Search Browser', 'MCP'],
+    knowledge: [],
+    permissions: ['tasks.execute', 'tasks.delegate', 'tasks.replan', 'external.read'],
+    model: 'gpt-4o-mini',
+    avatarUrl: null,
   });
   return id;
 }
@@ -109,14 +124,22 @@ export async function updateWorkspaceName(id: string, name: string) {
   return true;
 }
 
-export async function updateWorkspaceOnboarding(id: string, contextPrompt?: string) {
+export async function updateWorkspaceOnboarding(id: string, contextPrompt?: string, options?: { businessMode?: 'existing' | 'new'; businessGoal?: string }) {
   const userId = await getUserId();
   if (!userId) throw new Error("Unauthorized");
 
   const accessible = await getAccessibleWorkspace(id, userId);
   if (!accessible) throw new Error("Forbidden");
 
-  const updateData: any = { onboardingCompleted: true, updatedAt: new Date() };
+  const businessMode = options?.businessMode === 'new' ? 'new' : 'existing';
+  const businessGoal = options?.businessGoal?.trim() || null;
+  const updateData: any = {
+    onboardingCompleted: true,
+    businessMode,
+    businessGoal,
+    businessConceptStatus: businessMode === 'new' ? 'pending_research' : 'not_started',
+    updatedAt: new Date(),
+  };
   if (contextPrompt) {
     updateData.contextPrompt = contextPrompt;
 
@@ -137,10 +160,47 @@ export async function updateWorkspaceOnboarding(id: string, contextPrompt?: stri
     .set(updateData)
     .where(eq(workspaces.id, id));
 
-  const build = await ensureBuild(id);
-  if (build.status === 'pending') triggerWorkspaceBuild(id);
+  if (businessMode === 'existing') {
+    const build = await ensureBuild(id);
+    if (build.status === 'pending') triggerWorkspaceBuild(id);
+  } else {
+    await queueNewBusinessResearch(id, userId, businessGoal || '');
+  }
 
   return true;
+}
+
+async function queueNewBusinessResearch(workspaceId: string, userId: string, goal: string) {
+  const agent = await db.query.agents.findFirst({
+    where: (table, helpers) => helpers.and(helpers.eq(table.workspaceId, workspaceId), helpers.eq(table.role, 'Chief of Staff')),
+  });
+  if (!agent) throw new Error('Workspace agent is not configured');
+
+  const activeTask = await db.query.agentTasks.findFirst({
+    where: (table, helpers) => helpers.and(
+      helpers.eq(table.workspaceId, workspaceId),
+      helpers.eq(table.assignedAgentId, agent.id),
+      helpers.eq(table.title, 'Research SaaS business opportunity'),
+      helpers.inArray(table.status, ['queued', 'running']),
+    ),
+  });
+  if (activeTask) return activeTask.id;
+
+  const [task] = await db.insert(agentTasks).values({
+    workspaceId,
+    createdByUserId: userId,
+    assignedAgentId: agent.id,
+    title: 'Research SaaS business opportunity',
+    input: {
+      source: 'new_business_research',
+      message: `Research and propose a SaaS business based on this user goal:\n\n${goal}\n\nUse authorized research tools to gather real evidence about demand, competitors, audiences, pricing, and distribution. Do not invent sources or evidence. Return a single JSON object with keys: concept, evidence, competitors, audience, valueProposition, monetization, mvp, channels, risks, unknowns. Every evidence item must include a source URL or be marked unknown. The proposal requires user approval before it is treated as the workspace strategy.`,
+      maxSteps: 30,
+    },
+    maxSteps: 30,
+    maxCostUsd: 2,
+  }).returning();
+  await appendAgentTaskEvent({ workspaceId, taskId: task.id, agentId: agent.id, type: 'task_queued', payload: { title: task.title, source: 'new_business_research' } });
+  return task.id;
 }
 
 export async function updateWorkspaceDomain(id: string, domain: string) {
@@ -154,6 +214,37 @@ export async function updateWorkspaceDomain(id: string, domain: string) {
     .set({ domain: domain.trim(), updatedAt: new Date() })
     .where(eq(workspaces.id, id));
 
+  return true;
+}
+
+export async function approveBusinessConcept(id: string) {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Unauthorized');
+  const accessible = await getAccessibleWorkspace(id, userId);
+  if (!accessible) throw new Error('Forbidden');
+  await db.update(workspaces).set({ businessConceptStatus: 'approved', updatedAt: new Date() }).where(eq(workspaces.id, id));
+  return true;
+}
+
+export async function requestBusinessConceptChanges(id: string, feedback: string) {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Unauthorized');
+  const accessible = await getAccessibleWorkspace(id, userId);
+  if (!accessible) throw new Error('Forbidden');
+  const trimmed = feedback.trim();
+  if (!trimmed) throw new Error('Feedback is required');
+  await db.update(workspaces).set({ businessConceptStatus: 'pending_research', updatedAt: new Date() }).where(eq(workspaces.id, id));
+  await queueNewBusinessResearch(id, userId, `${accessible.businessGoal || ''}\n\nUser requested these changes to the proposal:\n${trimmed}`);
+  return true;
+}
+
+export async function regenerateBusinessConcept(id: string) {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Unauthorized');
+  const accessible = await getAccessibleWorkspace(id, userId);
+  if (!accessible) throw new Error('Forbidden');
+  await db.update(workspaces).set({ businessConceptStatus: 'pending_research', updatedAt: new Date() }).where(eq(workspaces.id, id));
+  await queueNewBusinessResearch(id, userId, `${accessible.businessGoal || ''}\n\nGenerate a materially different concept from the previous proposal.`);
   return true;
 }
 
@@ -183,4 +274,3 @@ export async function getUserWorkspaces() {
 
   return Array.from(allMap.values());
 }
-

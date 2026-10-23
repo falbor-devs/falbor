@@ -140,13 +140,18 @@ async function syncStorageFromServer() {
     const res = await fetch("/api/sync");
     if (!res.ok) return;
     const data = (await res.json()) as Record<string, any>;
-    for (const [key, value] of Object.entries(data)) {
-      if (key.startsWith("__")) continue;
-      try {
-        localStorage.setItem(key, JSON.stringify(value));
-      } catch {
-        
+    (window as any).__falborHydratingFromServer = true;
+    try {
+      for (const [key, value] of Object.entries(data)) {
+        if (key.startsWith("__")) continue;
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch {
+          
+        }
       }
+    } finally {
+      (window as any).__falborHydratingFromServer = false;
     }
   } catch {
     

@@ -22,7 +22,7 @@ const logLevelOptions: SelectOption[] = [
     value: 'all',
     label: 'All Types',
     icon: 'i-ph:funnel',
-    color: '#E03602',
+    color: '#0099FF',
   },
   {
     value: 'provider',

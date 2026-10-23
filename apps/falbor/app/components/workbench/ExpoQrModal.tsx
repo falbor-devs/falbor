@@ -40,7 +40,7 @@ export const ExpoQrModal: React.FC<ExpoQrModalProps> = ({ open, onClose }) => {
                 style={{
                   borderRadius: 16,
                   padding: 2,
-                  backgroundColor: '#E03602',
+                  backgroundColor: '#0099FF',
                 }}
                 value={expoUrl}
                 size={200}

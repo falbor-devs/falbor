@@ -1,73 +1,58 @@
 import { NextResponse } from 'next/server';
-import { db } from '~/lib/db';
-import { googleAdsConnections } from '~/lib/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { requireMetaContext } from '~/lib/services/metaAuth';
+import { getCampaigns, getInsights } from '~/lib/services/metaAds';
 
 export const dynamic = 'force-dynamic';
-
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const workspaceId = searchParams.get('workspaceId');
+    const adAccountId = searchParams.get('adAccountId') || undefined;
 
     if (!workspaceId) {
       return NextResponse.json({ error: 'workspaceId required' }, { status: 400 });
     }
 
-    const adAccountId = process.env.META_AD_ACCOUNT_ID;
-    if (!adAccountId) {
-      return NextResponse.json({ error: 'META_AD_ACCOUNT_ID not configured' }, { status: 500 });
+    const context = await requireMetaContext(workspaceId, adAccountId);
+    const campaignsRes = await getCampaigns(context.accessToken, context.adAccountId);
+    if (!campaignsRes.ok) {
+      return NextResponse.json({ error: campaignsRes.error.message }, { status: 400 });
     }
 
-    const connection = await db.query.googleAdsConnections.findFirst({
-      where: and(
-        eq(googleAdsConnections.workspaceId, workspaceId),
-        eq(googleAdsConnections.customerId, 'meta')
-      ),
-    });
-
-    if (!connection?.refreshToken) {
-      return NextResponse.json({ campaigns: [] });
-    }
-
-    const accessToken = connection.refreshToken;
-    const normalizedId = adAccountId.startsWith('act_') ? adAccountId : `act_${adAccountId}`;
-
-    const fields = 'id,name,status,effective_status,objective,created_time,daily_budget';
-    const res = await fetch(
-      `https://graph.facebook.com/v19.0/${normalizedId}/campaigns?fields=${fields}&access_token=${accessToken}`
-    );
-    const data = await res.json();
-
-    if (data.error) {
-      console.error('Meta campaigns query error:', data.error);
-      return NextResponse.json({ error: data.error.message }, { status: 400 });
-    }
-
-    const campaigns = (data.data || []).map((c: any) => ({
-      ...c,
-      status: c.status || c.effective_status || 'PAUSED',
-    }));
+    const campaigns = campaignsRes.data;
 
     const withInsights = await Promise.all(
-      campaigns.slice(0, 20).map(async (c: any) => {
-        try {
-          const insightsRes = await fetch(
-            `https://graph.facebook.com/v19.0/${c.id}/insights?fields=impressions,clicks,spend,ctr,reach&date_preset=lifetime&access_token=${accessToken}`
-          );
-          const insightsData = await insightsRes.json();
-          const insights = insightsData.data?.[0] || {};
-          return { ...c, impressions: insights.impressions || '0', clicks: insights.clicks || '0', spend: insights.spend || '0.00', ctr: insights.ctr || '0', reach: insights.reach || '0' };
-        } catch {
-          return { ...c, impressions: '0', clicks: '0', spend: '0.00', ctr: '0', reach: '0' };
-        }
-      })
+      campaigns.slice(0, 50).map(async (c) => {
+        const insightsRes = await getInsights(context.accessToken, c.id, 'lifetime');
+        const insights = insightsRes.ok ? insightsRes.data : {};
+
+        // Budget normally lives on the ad set, not the campaign. Fall back to the
+        // campaign-level budget if the campaign is the budget owner.
+        const adSet = c.adsets?.data?.[0];
+        const daily = c.daily_budget || adSet?.daily_budget;
+        const lifetime = c.lifetime_budget || adSet?.lifetime_budget;
+        const budgetMinor = daily || lifetime;
+        const budgetType = daily ? 'daily' : lifetime ? 'lifetime' : undefined;
+
+        return {
+          ...c,
+          status: c.status || c.effective_status || 'PAUSED',
+          budgetType,
+          budgetAmount: budgetMinor ? (parseInt(budgetMinor, 10) / 100).toString() : undefined,
+          impressions: insights.impressions || '0',
+          clicks: insights.clicks || '0',
+          spend: insights.spend || '0',
+          ctr: insights.ctr || '0',
+          reach: insights.reach || '0',
+        };
+      }),
     );
 
-    return NextResponse.json({ campaigns: withInsights });
+    return NextResponse.json({ campaigns: withInsights, adAccountId: context.adAccountId });
   } catch (err: any) {
-    console.error('Meta fetch campaigns error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const message = err?.message || 'Internal error';
+    const status = message === 'Forbidden' ? 403 : message === 'Unauthorized' ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

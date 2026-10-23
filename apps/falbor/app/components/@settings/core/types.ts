@@ -7,6 +7,7 @@ export type TabType =
   | 'profile'
   | 'memories'
   | 'settings'
+  | 'pets'
   | 'pricing'
   | 'billing'
   | 'notifications'
@@ -75,6 +76,7 @@ export const TAB_LABELS: Record<TabType, string> = {
   profile: 'Profile',
   memories: 'Memories',
   settings: 'Settings',
+  pets: 'Pets',
   pricing: 'Pricing',
   billing: 'Billing',
   notifications: 'Notifications',

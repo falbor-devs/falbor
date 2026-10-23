@@ -1,0 +1,11 @@
+ALTER TABLE "demand_capture_opportunities" ADD COLUMN IF NOT EXISTS "title" text;
+ALTER TABLE "demand_capture_opportunities" ADD COLUMN IF NOT EXISTS "description" text;
+ALTER TABLE "demand_capture_opportunities" ADD COLUMN IF NOT EXISTS "target_audience" text;
+ALTER TABLE "demand_capture_opportunities" ADD COLUMN IF NOT EXISTS "acquisition_mechanism" text;
+ALTER TABLE "demand_capture_opportunities" ADD COLUMN IF NOT EXISTS "recommended_action" text;
+ALTER TABLE "demand_capture_opportunities" ADD COLUMN IF NOT EXISTS "difficulty" varchar(32);
+ALTER TABLE "demand_capture_opportunities" ALTER COLUMN "status" SET DEFAULT 'discovered';
+ALTER TABLE "demand_capture_opportunities" ADD COLUMN IF NOT EXISTS "execution_plan" jsonb;
+ALTER TABLE "demand_capture_opportunities" ADD COLUMN IF NOT EXISTS "generated_output" text;
+ALTER TABLE "demand_capture_opportunities" ADD COLUMN IF NOT EXISTS "generated_output_type" varchar(32);
+ALTER TABLE "demand_capture_opportunities" ADD COLUMN IF NOT EXISTS "archived_at" timestamp;

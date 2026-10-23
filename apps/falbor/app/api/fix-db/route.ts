@@ -59,9 +59,26 @@ export async function GET() {
     }
     
     const schemaPath = path.join(process.cwd(), 'app/lib/db/schema.ts');
-    fs.appendFileSync(schemaPath, newSchemaCode);
-    
-    return NextResponse.json({ success: true, message: "Missing tables appended to schema.ts!" });
+    const existing = fs.readFileSync(schemaPath, 'utf8');
+    // Idempotent: never append a table that is already declared in the schema.
+    const missingBlocks = newSchemaCode
+      .split(/(?=^export const )/m)
+      .filter((block) => {
+        const match = block.match(/^export const (\w+)/m);
+        if (!match) return false;
+        return !new RegExp(`export const ${match[1]}\\b`).test(existing);
+      });
+    const toAppend = missingBlocks.length
+      ? '\n// Extracted from live DB to prevent Drizzle dropping them\n' + missingBlocks.join('')
+      : '';
+    if (toAppend) {
+      fs.appendFileSync(schemaPath, toAppend);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: toAppend ? 'Missing tables appended to schema.ts!' : 'No missing tables to append.',
+    });
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e.message });
   }

@@ -48,7 +48,21 @@ const LinkCard = ({ link }: { link: EventLink }) => {
 
 export const EventItem = ({ event }: { event: AIEvent }) => {
   const [expanded, setExpanded] = useState(false);
+  const [showCode, setShowCode] = useState(false);
+  const [liked, setLiked] = useState<boolean | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [pendingRating, setPendingRating] = useState<'like' | 'dislike'>('like');
+  const [feedbackText, setFeedbackText] = useState('');
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const busy = useStore(aiSidebarStore.isActive);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && event.id) {
+      const saved = localStorage.getItem(`falbor_feedback_${event.id}`);
+      setLiked(saved === 'like' ? true : saved === 'dislike' ? false : null);
+    }
+  }, [event.id]);
 
   if (event.type === 'user') {
     const userMCPs = (event as any).selectedMCPs || [];
@@ -209,8 +223,6 @@ export const EventItem = ({ event }: { event: AIEvent }) => {
   }
 
   if (event.type === 'widget') {
-    const [showCode, setShowCode] = useState(false);
-
     return (
       <div className="flex flex-col my-2 max-w-full w-full">
         <div
@@ -244,6 +256,16 @@ export const EventItem = ({ event }: { event: AIEvent }) => {
     );
   }
 
+  if ((event as any).type === 'summary_preview') {
+    const safeHtml = (event.html || '').replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\son[a-z]+\s*=\s*["'][^"']*["']/gi, '').replace(/javascript:/gi, '');
+    return (
+      <div className="my-3 w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 text-sm font-semibold text-gray-900 dark:text-white">{event.title || 'Summary preview'}</div>
+        <div className="p-4 text-sm text-gray-800 dark:text-gray-200" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+      </div>
+    );
+  }
+
   if ((event as any).type === 'tool' || (event as any).toolInvocations) {
     return (
       <div className="my-2 max-w-full">
@@ -259,21 +281,6 @@ export const EventItem = ({ event }: { event: AIEvent }) => {
   }
 
   if (event.type === 'text' || event.type === 'chat') {
-    const [liked, setLiked] = useState<boolean | null>(null);
-    const [copied, setCopied] = useState(false);
-    const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
-    const [pendingRating, setPendingRating] = useState<'like' | 'dislike'>('like');
-    const [feedbackText, setFeedbackText] = useState('');
-    const [submittingFeedback, setSubmittingFeedback] = useState(false);
-
-    useEffect(() => {
-      if (typeof window !== 'undefined' && event.id) {
-        const saved = localStorage.getItem(`falbor_feedback_${event.id}`);
-        if (saved === 'like') setLiked(true);
-        if (saved === 'dislike') setLiked(false);
-      }
-    }, [event.id]);
-
     let textContent = event.title || '';
     textContent = textContent.replace(/```(?:json)?\s*\{\s*"OPTIONS":\s*\[[\s\S]*?\]\s*\}\s*```/gi, '');
     textContent = textContent.replace(/OPTIONS:\s*\[[\s\S]*?\]/gi, '');
@@ -607,63 +614,85 @@ export const AgentMessages = ({ events, isActive }: { events: AIEvent[]; isActiv
   return (
     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col">
       <div className="mt-auto w-full max-w-[480px] mx-auto p-3">
-      {events.length === 0 && !isActive ? (
-        <div className="flex flex-col items-start text-left py-2 px-1 w-full animate-fade-in">
-          {/* Logo / Agent Avatar on left */}
-          <div className="mb-4">
-            {currentAgent?.avatarUrl ? (
-              <img className="w-10 h-10 rounded-full object-cover" src={currentAgent.avatarUrl} alt="Agent Avatar" />
-            ) : (
-              <img className="w-9 h-9 object-contain" src="/icons/logo.svg" alt="Falbor" />
+        {events.length === 0 && !isActive ? (
+          <div className="flex flex-col items-start text-left py-2 px-1 w-full animate-fade-in">
+            {/* Logo / Agent Avatar on left */}
+            <div className="mb-4">
+              {currentAgent?.avatarUrl ? (
+                <img className="w-10 h-10 rounded-full object-cover" src={currentAgent.avatarUrl} alt="Agent Avatar" />
+              ) : (
+                <img className="w-9 h-9 object-contain" src="/icons/logo.svg" alt="Falbor" />
+              )}
+            </div>
+
+            {/* Heading */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                Hi, I'm {agentName}
+              </h1>
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-200/70 dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-400">
+                AI Agent
+              </span>
+            </div>
+
+            {/* Short description */}
+            <p className="text-sm text-gray-600 dark:text-[#a0a0a5] leading-relaxed mb-6 max-w-md">
+              {agentDesc}
+            </p>
+
+            {/* Suggestion buttons */}
+            <div className="flex flex-col gap-2">
+              {FALBOR_SUGGESTIONS.map((sugg, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSuggestionClick(sugg.prompt)}
+                  className="flex items-center gap-3 w-full p-3 rounded-xl bg-gray-100 dark:bg-[#282828] text-gray-800 dark:text-gray-200 transition-colors text-left text-sm font-medium"
+                >
+                  <i className={`${sugg.icon} text-lg text-gray-500 dark:text-gray-400 shrink-0`} />
+                  <span className="truncate flex-1">{sugg.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col w-full pb-4">
+            {events.map((event) => (
+              <EventItem key={event.id} event={event} />
+            ))}
+
+            {isActive && (
+              <div className="mt-2 flex items-center gap-2">
+                <video
+                  src="/icons/pets/Agent-Loading.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  aria-hidden="true"
+                  className="h-8 w-8 shrink-0 rounded-md object-cover"
+                />
+                <TextShimmer>
+                  Agent Syncing
+                </TextShimmer>
+              </div>
             )}
           </div>
-
-          {/* Heading */}
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
-              Hi, I'm {agentName}
-            </h1>
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-200/70 dark:bg-[#2c2c2e] text-gray-600 dark:text-gray-400">
-              AI Agent
-            </span>
-          </div>
-
-          {/* Short description */}
-          <p className="text-sm text-gray-600 dark:text-[#a0a0a5] leading-relaxed mb-6 max-w-md">
-            {agentDesc}
-          </p>
-
-          {/* Suggestion buttons */}
-          <div className="flex flex-col gap-2">
-            {FALBOR_SUGGESTIONS.map((sugg, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSuggestionClick(sugg.prompt)}
-                className="flex items-center gap-3 w-full p-3 rounded-xl bg-gray-100 dark:bg-[#282828] text-gray-800 dark:text-gray-200 transition-colors text-left text-sm font-medium"
-              >
-                <i className={`${sugg.icon} text-lg text-gray-500 dark:text-gray-400 shrink-0`} />
-                <span className="truncate flex-1">{sugg.label}</span>
-              </button>
-            ))}
-          </div>
+        )}
+        <div className="mt-2 flex items-center gap-2">
+          <video
+            src="/icons/pets/Agent-Loading.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+            className="h-16 w-16 shrink-0 rounded-md object-cover"
+          />
+          <TextShimmer>
+            Agent Syncing
+          </TextShimmer>
         </div>
-      ) : (
-        <div className="flex flex-col w-full pb-4">
-          {events.map((event) => (
-            <EventItem key={event.id} event={event} />
-          ))}
-
-          {isActive && (
-            <div className="mt-2">
-              <TextShimmer>
-                <i className="i-ph:spinner animate-spin text-sm text-blue-500 mr-2" />
-                Agent thinking
-              </TextShimmer>
-            </div>
-          )}
-        </div>
-      )}
       </div>
     </div>
   );

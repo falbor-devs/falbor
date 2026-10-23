@@ -51,6 +51,7 @@ export function WorkspaceSignalRadarView({ workspaceId }: WorkspaceSignalRadarVi
                 selected={selectedPlatforms}
                 onToggle={handleToggle}
                 onContinue={() => setPhase('scan')}
+                title="Signals"
             />
         );
     }

@@ -6,9 +6,9 @@ export interface DesignScheme {
 
 export const defaultDesignScheme: DesignScheme = {
   palette: {
-    primary: '#E03602',
+    primary: '#0099FF',
     secondary: '#38bdf8',
-    accent: '#B12B06',
+    accent: '#006FB8',
     background: '#171717',
     surface: '#262626',
     text: '#FFFFFF',
@@ -26,11 +26,11 @@ export const colorTemplates = [
   {
     key: 'default-dark',
     label: 'Default Dark',
-    description: 'The standard Falbor dark theme with orange accents.',
+    description: 'The standard Falbor dark theme with blue accents.',
     palette: {
-      primary: '#E03602',
+      primary: '#0099FF',
       secondary: '#38bdf8',
-      accent: '#B12B06',
+      accent: '#006FB8',
       background: '#171717',
       surface: '#262626',
       text: '#FFFFFF',
@@ -44,7 +44,7 @@ export const colorTemplates = [
   {
     key: 'clean-light',
     label: 'Clean Light',
-    description: 'A crisp, white aesthetic with subtle gray borders and orange accents.',
+    description: 'A crisp, white aesthetic with subtle gray borders and blue accents.',
     palette: {
       primary: '#D97A55',
       secondary: '#0ea5e9',

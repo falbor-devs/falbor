@@ -16,10 +16,7 @@ export function useAgentSessionPolling(isOpen: boolean) {
           if (aiSidebarStore.isActive.get()) return;
           const evs = Array.isArray(res) ? res : res?.events || [];
           if (Array.isArray(evs) && evs.length > 0) {
-            const currentEvs = aiSidebarStore.events.get();
-            if (evs.length >= currentEvs.length && JSON.stringify(evs) !== JSON.stringify(currentEvs)) {
-              aiSidebarStore.events.set(evs);
-            }
+            aiSidebarStore.mergeEvents(evs);
           }
         });
       });

@@ -160,9 +160,9 @@ const NotificationsTab = () => {
   };
 
   const filterOptions: { id: FilterType; label: string; icon: string; color: string }[] = [
-    { id: 'all', label: 'All Notifications', icon: 'i-ph:bell', color: '#E03602' },
+    { id: 'all', label: 'All Notifications', icon: 'i-ph:bell', color: '#0099FF' },
     { id: 'system', label: 'System', icon: 'i-ph:gear', color: '#6b7280' },
-    { id: 'update', label: 'Updates', icon: 'i-ph:arrow-circle-up', color: '#E03602' },
+    { id: 'update', label: 'Updates', icon: 'i-ph:arrow-circle-up', color: '#0099FF' },
     { id: 'error', label: 'Errors', icon: 'i-ph:warning-circle', color: '#ef4444' },
     { id: 'warning', label: 'Warnings', icon: 'i-ph:warning', color: '#f59e0b' },
     { id: 'info', label: 'Information', icon: 'i-ph:info', color: '#3b82f6' },

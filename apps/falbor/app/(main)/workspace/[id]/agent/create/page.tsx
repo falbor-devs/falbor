@@ -8,17 +8,34 @@ import { classNames } from '~/utils/classNames';
 import { Dropdown, DropdownItem } from '~/components/ui/Dropdown';
 import { toast } from 'react-toastify';
 
+const OPEN_SOURCE_MODEL = 'falbor-local:smolvlm-500m';
+
 const PREDEFINED_ROLES = [
-  { label: 'Research Agent', value: 'Researcher' },
-  { label: 'Marketing Agent', value: 'Marketing Opportunity Finder' },
-  { label: 'Sales Agent', value: 'Lead Finder' },
-  { label: 'Coding Agent', value: 'Bug Fixer' },
-  { label: 'Analyst Agent', value: 'Results Analyst' },
-  { label: 'Chief of Staff', value: 'Task Delegator' },
+  { label: 'Research Agent', value: 'Research Agent' },
+  { label: 'Marketing Agent', value: 'Marketing Agent' },
+  { label: 'Sales Agent', value: 'Sales Agent' },
+  { label: 'Summary Agent', value: 'Summary Agent' },
+  { label: 'Chief of Staff', value: 'Chief of Staff' },
 ];
 
 const AVAILABLE_TOOLS = ['Web Search Browser', 'MCP'];
-const AVAILABLE_PERMISSIONS = ['Read Files', 'Write Files', 'Execute Code', 'Send Messages'];
+const AVAILABLE_PERMISSIONS = ['tasks.execute', 'tasks.delegate', 'tasks.replan', 'external.read', 'external.write', 'external.send', 'external.publish', 'spend.money'];
+const PERMISSION_LABELS: Record<string, string> = {
+  'tasks.execute': 'Execute tasks',
+  'tasks.delegate': 'Delegate tasks',
+  'tasks.replan': 'Replan tasks',
+  'external.read': 'Read external data',
+  'external.write': 'Write external data',
+  'external.send': 'Send external messages',
+  'external.publish': 'Publish content',
+  'spend.money': 'Spend money',
+};
+const LEGACY_PERMISSION_MAP: Record<string, string> = {
+  'Read Files': 'external.read',
+  'Write Files': 'external.write',
+  'Execute Code': 'tasks.execute',
+  'Send Messages': 'external.send',
+};
 
 export default function CreateAgentPage({ params }: { params: { id: string } }) {
   return (
@@ -39,21 +56,28 @@ function CreateAgentForm({ params }: { params: { id: string } }) {
   
   const [formData, setFormData] = useState({
     name: '',
-    role: '',
+    role: 'Research Agent',
     customRole: '',
     goal: '',
     instructions: '',
     memory: '',
     knowledge: '',
-    model: 'gpt-5-6',
+    model: 'gpt-4o-mini',
     avatarUrl: ''
   });
 
   const [selectedTools, setSelectedTools] = useState<string[]>(['Web Search Browser', 'MCP']);
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(['Read Files', 'Write Files']);
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(['tasks.execute']);
   
   const [isCustomRole, setIsCustomRole] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isLocalHost, setIsLocalHost] = useState(false);
+
+  useEffect(() => {
+    const localHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    setIsLocalHost(localHost);
+    if (!editAgentId && localHost) setFormData((current) => ({ ...current, model: OPEN_SOURCE_MODEL }));
+  }, [editAgentId]);
 
   useEffect(() => {
     if (!editAgentId) return;
@@ -71,12 +95,14 @@ function CreateAgentForm({ params }: { params: { id: string } }) {
             instructions: agent.instructions || '',
             memory: agent.memory || '',
             knowledge: Array.isArray(agent.knowledge) ? (agent.knowledge as string[]).join(', ') : '',
-            model: agent.model || 'gpt-5-6',
+            model: agent.model || 'gpt-4o-mini',
             avatarUrl: agent.avatarUrl || '',
           });
           if (agent.avatarUrl) setAvatarPreview(agent.avatarUrl);
           if (Array.isArray(agent.tools)) setSelectedTools(agent.tools as string[]);
-          if (Array.isArray(agent.permissions)) setSelectedPermissions(agent.permissions as string[]);
+          if (Array.isArray(agent.permissions)) {
+            setSelectedPermissions((agent.permissions as string[]).map((permission) => LEGACY_PERMISSION_MAP[permission] || permission));
+          }
         }
       } catch (err) {
         console.error('Failed to load agent for editing:', err);
@@ -100,6 +126,9 @@ function CreateAgentForm({ params }: { params: { id: string } }) {
       setIsCustomRole(false);
       setFormData({ ...formData, role: val });
     }
+    setSelectedPermissions((current) => val === 'Chief of Staff'
+      ? Array.from(new Set([...current, 'tasks.delegate', 'tasks.replan']))
+      : current.filter((permission) => permission !== 'tasks.delegate' && permission !== 'tasks.replan'));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,11 +154,20 @@ function CreateAgentForm({ params }: { params: { id: string } }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const role = (isCustomRole ? formData.customRole : formData.role).trim();
+    if (!formData.name.trim()) {
+      toast.error('Agent name is required');
+      return;
+    }
+    if (!role) {
+      toast.error('Select a role or enter a custom role');
+      return;
+    }
     setLoading(true);
     try {
       const payload = {
         ...formData,
-        role: isCustomRole ? formData.customRole : formData.role,
+        role,
         tools: selectedTools,
         knowledge: formData.knowledge.split(',').map(k => k.trim()).filter(Boolean),
         permissions: selectedPermissions,
@@ -164,8 +202,8 @@ function CreateAgentForm({ params }: { params: { id: string } }) {
   return (
     <div className="flex flex-row h-screen w-full overflow-hidden bg-falbor-elements-background">
       <ClientSidebar />
-      <div className="flex-1 p-4 h-full min-w-0 bg-[#f7f7f8] dark:bg-[#111114] overflow-hidden">
-        <div className="flex flex-col h-full w-full relative rounded-md border border-gray-300 dark:border-gray-800/80 bg-white dark:bg-[#080808] overflow-y-auto custom-scrollbar">
+      <div className="flex-1 h-full min-w-0 bg-white dark:bg-[#212121] overflow-hidden">
+        <div className="flex flex-col h-full w-full relative bg-white dark:bg-[#212121] overflow-y-auto custom-scrollbar">
           
           <div className="flex flex-col w-full p-8 max-w-3xl mx-auto mt-4 mb-12">
             <div className="flex items-center justify-between mb-8">
@@ -212,31 +250,38 @@ function CreateAgentForm({ params }: { params: { id: string } }) {
                         <button type="button" className="flex items-center justify-between w-full bg-white dark:bg-[#080808] border border-gray-300 dark:border-gray-700 rounded-md px-3 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
                           <div className="flex items-center gap-2">
                             <div className="i-ph:brain text-lg text-purple-500" />
-                            <span>{formData.model === 'gpt-5-6' ? 'GPT 5.6' : formData.model === 'claude-sonnet-4-5' ? 'Cloud Sonnet 4.5' : 'Cloud Haki 4.5'}</span>
+                            <span>{formData.model === OPEN_SOURCE_MODEL ? 'Open Source Agent' : formData.model === 'gpt-4o-mini' ? 'ChatGPT Luna 5.6' : formData.model === 'claude-sonnet-4-5' ? 'Claude Sonnet 4.5' : 'Claude Haiku 4.5'}</span>
                           </div>
                           <div className="i-ph:caret-down text-gray-400" />
                         </button>
                       }
                     >
-                      <DropdownItem 
-                        onSelect={() => setFormData({ ...formData, model: 'gpt-5-6' })} 
-                        className={classNames("flex items-center justify-between w-full p-2 cursor-pointer", formData.model === 'gpt-5-6' && 'bg-gray-100 dark:bg-gray-800')}
+                      {isLocalHost && <DropdownItem
+                        onSelect={() => setFormData({ ...formData, model: OPEN_SOURCE_MODEL })}
+                        className={classNames("flex items-center justify-between w-full p-2 cursor-pointer", formData.model === OPEN_SOURCE_MODEL && 'bg-gray-100 dark:bg-gray-800')}
                       >
-                        <div className="flex items-center gap-2"><img src="/icons/OpenAI.svg" className="w-4 h-4" /><span>GPT 5.6</span></div>
-                        {formData.model === 'gpt-5-6' && <div className="i-ph:check text-green-500 ml-auto" />}
+                        <div className="flex items-center gap-2"><div className="i-ph:cpu text-lg text-emerald-500" /><span>Open Source Agent</span></div>
+                        {formData.model === OPEN_SOURCE_MODEL && <div className="i-ph:check text-green-500 ml-auto" />}
+                      </DropdownItem>}
+                      <DropdownItem
+                        onSelect={() => setFormData({ ...formData, model: 'gpt-4o-mini' })}
+                        className={classNames("flex items-center justify-between w-full p-2 cursor-pointer", formData.model === 'gpt-4o-mini' && 'bg-gray-100 dark:bg-gray-800')}
+                      >
+                        <div className="flex items-center gap-2"><img src="/icons/OpenAI.svg" className="w-4 h-4" /><span>ChatGPT Luna 5.6</span></div>
+                        {formData.model === 'gpt-4o-mini' && <div className="i-ph:check text-green-500 ml-auto" />}
                       </DropdownItem>
-                      <DropdownItem 
+                      <DropdownItem
                         onSelect={() => setFormData({ ...formData, model: 'claude-sonnet-4-5' })} 
                         className={classNames("flex items-center justify-between w-full p-2 cursor-pointer", formData.model === 'claude-sonnet-4-5' && 'bg-gray-100 dark:bg-gray-800')}
                       >
-                        <div className="flex items-center gap-2"><img src="/icons/claude-color.svg" className="w-4 h-4" /><span>Cloud Sonnet 4.5</span></div>
+                        <div className="flex items-center gap-2"><img src="/icons/claude-color.svg" className="w-4 h-4" /><span>Claude Sonnet 4.5</span></div>
                         {formData.model === 'claude-sonnet-4-5' && <div className="i-ph:check text-green-500 ml-auto" />}
                       </DropdownItem>
-                      <DropdownItem 
-                        onSelect={() => setFormData({ ...formData, model: 'claude-haiku-4-5' })} 
+                      <DropdownItem
+                        onSelect={() => setFormData({ ...formData, model: 'claude-haiku-4-5' })}
                         className={classNames("flex items-center justify-between w-full p-2 cursor-pointer", formData.model === 'claude-haiku-4-5' && 'bg-gray-100 dark:bg-gray-800')}
                       >
-                        <div className="flex items-center gap-2"><img src="/icons/claude-color.svg" className="w-4 h-4" /><span>Cloud Haki 4.5</span></div>
+                        <div className="flex items-center gap-2"><img src="/icons/claude-color.svg" className="w-4 h-4" /><span>Claude Haiku 4.5</span></div>
                         {formData.model === 'claude-haiku-4-5' && <div className="i-ph:check text-green-500 ml-auto" />}
                       </DropdownItem>
                     </Dropdown>
@@ -327,11 +372,20 @@ function CreateAgentForm({ params }: { params: { id: string } }) {
                             onSelect={(e) => { e.preventDefault(); togglePermission(perm); }} 
                             className="flex items-center justify-between w-full p-2 cursor-pointer"
                           >
-                            <span>{perm}</span>
+                            <span>{PERMISSION_LABELS[perm] || perm}</span>
                             {selectedPermissions.includes(perm) && <div className="i-ph:check text-purple-500 ml-auto" />}
                           </DropdownItem>
                         ))}
                       </Dropdown>
+                      {selectedPermissions.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {selectedPermissions.map((permission) => (
+                            <span key={permission} className="px-2 py-1 text-xs rounded-md bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300">
+                              {PERMISSION_LABELS[permission] || permission}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -350,7 +404,7 @@ function CreateAgentForm({ params }: { params: { id: string } }) {
               <div className="flex justify-end mt-8">
                 <button 
                   type="submit" 
-                  disabled={loading || !formData.name}
+                  disabled={loading || !formData.name.trim() || !((isCustomRole ? formData.customRole : formData.role).trim())}
                   className="flex items-center gap-2 px-8 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (editAgentId ? 'Saving...' : 'Creating...') : (editAgentId ? 'Save Changes' : 'Create Agent')}

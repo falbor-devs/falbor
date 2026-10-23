@@ -5,9 +5,61 @@ import { agents, users } from '~/lib/db/schema';
 import { eq, and, desc, count } from 'drizzle-orm';
 import { getAuthUserDetails } from '~/lib/visual-editor/queries';
 import { BILLING_CONFIG, PlanId } from '~/lib/billing/config';
+import { requireWorkspaceActor } from '~/lib/agents/authorization';
+import { z } from 'zod';
+import { getDefaultAgentModel, isLocalAgentModel, isLocalAgentRuntimeAvailable } from '~/lib/agents/local-model';
+
+const AGENT_PERMISSION_KEYS = ['tasks.execute', 'tasks.delegate', 'tasks.replan', 'external.read', 'external.write', 'external.send', 'external.publish', 'spend.money'] as const;
+const LEGACY_PERMISSION_KEYS: Record<string, string> = {
+  'Read Files': 'external.read',
+  'Write Files': 'external.write',
+  'Execute Code': 'tasks.execute',
+  'Send Messages': 'external.send',
+};
+const agentPermissionSchema = z.string().trim().max(120).transform((permission) => LEGACY_PERMISSION_KEYS[permission] || permission);
+
+const agentInputSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  role: z.string().trim().min(1).max(120),
+  goal: z.string().trim().max(4000).optional().default(''),
+  instructions: z.string().trim().max(12000).optional().default(''),
+  memory: z.string().trim().max(12000).optional().default(''),
+  tools: z.array(z.string().trim().max(120)).max(30).optional().default([]),
+  knowledge: z.array(z.string().trim().max(2000)).max(100).optional().default([]),
+  permissions: z.array(agentPermissionSchema).max(30).optional().default([]).transform((permissions) => Array.from(new Set(permissions))).refine((permissions) => permissions.every((permission) => AGENT_PERMISSION_KEYS.includes(permission as typeof AGENT_PERMISSION_KEYS[number])), 'Unsupported agent permission'),
+  model: z.string().trim().min(1).max(160).optional().default(getDefaultAgentModel()),
+  avatarUrl: z.string().max(1000000).optional().nullable(),
+});
+
+const FALBOR_AGENT_TEMPLATE = {
+  name: 'Falbor Agent',
+  role: 'Chief of Staff',
+  goal: 'Coordinate workspace work, research, and execution through authorized tools and collaborating agents.',
+  instructions: 'Act as the user\'s default Falbor workspace agent. Use the available tools, inspect real results, collaborate through persisted tasks, and report verified outcomes separately from completed actions.',
+  memory: '',
+  tools: ['Web Search Browser', 'MCP'],
+  knowledge: [],
+  permissions: ['tasks.execute', 'tasks.delegate', 'tasks.replan', 'external.read'],
+  model: getDefaultAgentModel(),
+  avatarUrl: null,
+};
+
+export async function ensureFalborAgent(workspaceId: string) {
+  const actor = await requireWorkspaceActor(workspaceId);
+  const existing = await db.query.agents.findFirst({
+    where: (table, helpers) => helpers.and(helpers.eq(table.workspaceId, workspaceId), helpers.eq(table.name, FALBOR_AGENT_TEMPLATE.name)),
+  });
+  if (!existing) await db.insert(agents).values({ workspaceId, userId: actor.user.id, ...FALBOR_AGENT_TEMPLATE });
+  return db.query.agents.findFirst({
+    where: (table, helpers) => helpers.and(helpers.eq(table.workspaceId, workspaceId), helpers.eq(table.name, FALBOR_AGENT_TEMPLATE.name)),
+  });
+}
 
 export async function createAgent(workspaceId: string, data: any) {
   try {
+    const actor = await requireWorkspaceActor(workspaceId, 'editor');
+    const parsed = agentInputSchema.parse(data);
+    if (isLocalAgentModel(parsed.model) && !isLocalAgentRuntimeAvailable()) return { error: 'The Open Source Agent is only available when the local Agent Model runtime is configured.' };
     const authUser = await getAuthUserDetails();
     if (!authUser) return { error: 'Unauthorized' };
 
@@ -38,17 +90,17 @@ export async function createAgent(workspaceId: string, data: any) {
       .insert(agents)
       .values({
         workspaceId,
-        userId: user.id,
-        name: data.name,
-        role: data.role,
-        goal: data.goal,
-        instructions: data.instructions,
-        memory: data.memory,
-        tools: data.tools || [],
-        knowledge: data.knowledge || [],
-        permissions: data.permissions || [],
-        model: data.model || 'gpt-4o',
-        avatarUrl: data.avatarUrl,
+        userId: actor.user.id,
+        name: parsed.name,
+        role: parsed.role,
+        goal: parsed.goal,
+        instructions: parsed.instructions,
+        memory: parsed.memory,
+        tools: parsed.tools,
+        knowledge: parsed.knowledge,
+        permissions: parsed.permissions,
+        model: parsed.model,
+        avatarUrl: parsed.avatarUrl,
       })
       .returning();
 
@@ -61,14 +113,7 @@ export async function createAgent(workspaceId: string, data: any) {
 
 export async function getAgentsList(workspaceId: string) {
   try {
-    const authUser = await getAuthUserDetails();
-    if (!authUser) return [];
-
-    const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.email, authUser.email),
-    });
-
-    if (!user) return [];
+    await ensureFalborAgent(workspaceId);
 
     const agentList = await db
       .select()
@@ -85,8 +130,7 @@ export async function getAgentsList(workspaceId: string) {
 
 export async function getAgentById(workspaceId: string, agentId: string) {
   try {
-    const authUser = await getAuthUserDetails();
-    if (!authUser) return null;
+    await requireWorkspaceActor(workspaceId);
 
     const agent = await db.query.agents.findFirst({
       where: (a, { eq, and }) => and(eq(a.id, agentId), eq(a.workspaceId, workspaceId)),
@@ -101,22 +145,23 @@ export async function getAgentById(workspaceId: string, agentId: string) {
 
 export async function updateAgent(workspaceId: string, agentId: string, data: any) {
   try {
-    const authUser = await getAuthUserDetails();
-    if (!authUser) return false;
+    await requireWorkspaceActor(workspaceId, 'editor');
+    const parsed = agentInputSchema.parse(data);
+    if (isLocalAgentModel(parsed.model) && !isLocalAgentRuntimeAvailable()) return false;
 
     const [updatedAgent] = await db
       .update(agents)
       .set({
-        name: data.name,
-        role: data.role,
-        goal: data.goal,
-        instructions: data.instructions,
-        memory: data.memory,
-        tools: data.tools || [],
-        knowledge: data.knowledge || [],
-        permissions: data.permissions || [],
-        model: data.model || 'gpt-4o',
-        avatarUrl: data.avatarUrl,
+        name: parsed.name,
+        role: parsed.role,
+        goal: parsed.goal,
+        instructions: parsed.instructions,
+        memory: parsed.memory,
+        tools: parsed.tools,
+        knowledge: parsed.knowledge,
+        permissions: parsed.permissions,
+        model: parsed.model,
+        avatarUrl: parsed.avatarUrl,
         updatedAt: new Date(),
       })
       .where(and(eq(agents.id, agentId), eq(agents.workspaceId, workspaceId)))
@@ -131,8 +176,7 @@ export async function updateAgent(workspaceId: string, agentId: string, data: an
 
 export async function deleteAgent(workspaceId: string, agentId: string) {
   try {
-    const authUser = await getAuthUserDetails();
-    if (!authUser) return false;
+    await requireWorkspaceActor(workspaceId, 'editor');
 
     await db
       .delete(agents)
@@ -144,5 +188,3 @@ export async function deleteAgent(workspaceId: string, agentId: string) {
     return false;
   }
 }
-
-

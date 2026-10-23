@@ -1,0 +1,12 @@
+{
+  "name": "falbor-browser-extension",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Falbor Reddit Automation browser extension",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:chrome": "node build.mjs chrome",
+    "build:firefox": "node build.mjs firefox",
+    "package": "node build.mjs package"
+  }
+}

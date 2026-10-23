@@ -52,6 +52,7 @@ export default function Footer() {
         <div className="max-w-6xl mx-auto mt-16 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-zinc-200 dark:border-white/5">
           <p className="text-sm">© {new Date().getFullYear()} Falbor. All rights reserved.</p>
           <div className="flex items-center gap-4">
+            <span>Follow us:</span>
             <a href="https://x.com/WrRbybw84381" target="_blank" className="hover:scale-110 transition-transform">
               <img src="/landing/social/X.png" alt="X" className="w-6 h-6 object-contain dark:invert-0 invert" />
             </a>
@@ -63,9 +64,6 @@ export default function Footer() {
             </a>
             <a href="https://www.tiktok.com/@falbor.xyz" target="_blank" className="hover:scale-110 transition-transform">
               <img src="/landing/social/tiktok.png" alt="TikTok" className="w-6 h-6 object-contain" />
-            </a>
-            <a href="https://github.com/falbor-devs/falbor" target="_blank" className="hover:scale-110 transition-transform">
-              <img src="/icons/github.png" alt="GitHub" className="w-6 h-6 object-contain" />
             </a>
           </div>
           <a href="https://ufind.best/products/falbor" target="_blank" rel="noopener"><img src="https://ufind.best/badges/ufind-best-badge-light.svg" alt="Featured on ufind.best" width="150" className="dark:invert-0" /></a>

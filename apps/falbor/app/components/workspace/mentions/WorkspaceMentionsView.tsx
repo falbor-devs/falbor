@@ -1,6 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { Slider } from '~/components/ui/Slider';
 import { PlatformSelector } from '../signal-radar/PlatformSelector';
+import { WorkspaceSignalRadarView } from '../signal-radar/WorkspaceSignalRadarView';
 import { MentionsDashboard } from './MentionsDashboard';
 import type { BrandMentionPost } from './types';
 
@@ -8,9 +10,17 @@ interface WorkspaceMentionsViewProps {
     workspaceId: string;
 }
 
+type MentionsMode = 'mentions' | 'signals';
+
+const MODE_OPTIONS = {
+    left: { value: 'mentions', text: 'Mentions', icon: 'i-ph:at' },
+    right: { value: 'signals', text: 'Signals', icon: 'i-ph:broadcast' },
+} as const;
+
 const DEFAULT_PLATFORMS = ['Reddit', 'LinkedIn', 'Twitter', 'Google'];
 
 export function WorkspaceMentionsView({ workspaceId }: WorkspaceMentionsViewProps) {
+    const [mode, setMode] = useState<MentionsMode>('mentions');
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(DEFAULT_PLATFORMS);
     const [phase, setPhase] = useState<'select' | 'scan'>('select');
     const [savedPosts, setSavedPosts] = useState<BrandMentionPost[]>([]);
@@ -49,25 +59,35 @@ export function WorkspaceMentionsView({ workspaceId }: WorkspaceMentionsViewProp
         setPhase('select');
     };
 
-    if (phase === 'select') {
-        return (
-            <PlatformSelector
-                selected={selectedPlatforms}
-                onToggle={handleToggle}
-                onContinue={() => setPhase('scan')}
-                title="Mentions Radar"
-                description="Select at least 3 platforms for the AI to scan. It will surface real posts across the web explicitly mentioning your product or company."
-                buttonText="Scan for Mentions →"
-            />
-        );
-    }
-
     return (
-        <MentionsDashboard
-            initialPosts={savedPosts}
-            selectedPlatforms={selectedPlatforms}
-            workspaceId={workspaceId}
-            onReset={handleReset}
-        />
+        <div className="flex-1 flex flex-col h-full w-full overflow-hidden">
+            <div className="pt-3 shrink-0">
+                <Slider<MentionsMode>
+                    selected={mode}
+                    options={MODE_OPTIONS}
+                    setSelected={setMode}
+                />
+            </div>
+
+            {mode === 'signals' ? (
+                <WorkspaceSignalRadarView workspaceId={workspaceId} />
+            ) : phase === 'select' ? (
+                <PlatformSelector
+                    selected={selectedPlatforms}
+                    onToggle={handleToggle}
+                    onContinue={() => setPhase('scan')}
+                    title="Mentions"
+                    description="Select at least 3 platforms for the AI to scan. It will surface real posts across the web explicitly mentioning your product or company."
+                    buttonText="Scan for Mentions →"
+                />
+            ) : (
+                <MentionsDashboard
+                    initialPosts={savedPosts}
+                    selectedPlatforms={selectedPlatforms}
+                    workspaceId={workspaceId}
+                    onReset={handleReset}
+                />
+            )}
+        </div>
     );
 }

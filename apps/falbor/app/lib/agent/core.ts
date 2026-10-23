@@ -1,16 +1,102 @@
 import { generateText, tool } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { uiTools, UI_PROMPT } from './uiTools';
 import { createBrowserUseTools } from './browserUseTool';
 import { searchProspectsWithTomba } from '~/lib/agent/growthTools';
 import { db } from '~/lib/db';
 import { agentProspects, signalPosts, sourcePosts, workspaceSources } from '~/lib/db/schema';
+import { getAgentRolePrompt } from '~/lib/common/prompts/agents-rule';
+import { isLocalAgentModel, LOCAL_AGENT_BASE_URL, LOCAL_AGENT_MODEL } from '~/lib/agents/local-model';
 
 export type AgentChannel = 'web' | 'telegram';
 export type AgentHistoryMessage = { role: 'user' | 'assistant'; content: string };
 
-export const getAgentModel = () => createOpenAI({ apiKey: process.env.OPENAI_API_KEY })('gpt-4o-mini');
+const PLATFORM_DOMAINS: Record<string, string[]> = {
+    reddit: ['reddit.com'],
+    'hacker news': ['news.ycombinator.com'],
+    hackernews: ['news.ycombinator.com'],
+    hn: ['news.ycombinator.com'],
+    twitter: ['twitter.com', 'x.com'],
+    x: ['twitter.com', 'x.com'],
+    linkedin: ['linkedin.com'],
+    facebook: ['facebook.com'],
+    producthunt: ['producthunt.com'],
+    'product hunt': ['producthunt.com'],
+    indiehackers: ['indiehackers.com'],
+    dribbble: ['dribbble.com'],
+    youtube: ['youtube.com', 'youtu.be'],
+    tiktok: ['tiktok.com'],
+    instagram: ['instagram.com'],
+    pinterest: ['pinterest.com'],
+    quora: ['quora.com'],
+    medium: ['medium.com'],
+    devto: ['dev.to'],
+    'dev to': ['dev.to'],
+    stackoverflow: ['stackoverflow.com'],
+    threads: ['threads.net', 'threads.com'],
+    bluesky: ['bsky.app'],
+    mastodon: ['mastodon.social'],
+};
+
+const OPEN_PLATFORMS = new Set(['google', 'web', 'directory', 'directories', 'all', 'contacts']);
+
+function normalizePlatformName(platform: string): string {
+    return (platform || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').trim();
+}
+
+function hostMatchesDomains(host: string, domains: string[]): boolean {
+    return domains.some((d) => host === d || host.endsWith('.' + d));
+}
+
+export function postUrlIsAllowed(url: string, allowedPlatforms: string[]): { ok: boolean; matchedPlatform?: string } {
+    let host: string;
+    try {
+        host = new URL(url).hostname.toLowerCase();
+    } catch {
+        return { ok: false };
+    }
+    for (const platform of allowedPlatforms) {
+        const normalized = normalizePlatformName(platform);
+        if (OPEN_PLATFORMS.has(normalized)) return { ok: true, matchedPlatform: platform };
+        const domains = PLATFORM_DOMAINS[normalized];
+        if (!domains) return { ok: true, matchedPlatform: platform };
+        if (hostMatchesDomains(host, domains)) return { ok: true, matchedPlatform: platform };
+    }
+    return { ok: false };
+}
+
+export async function checkUrlExists(url: string): Promise<number> {
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 7000);
+        const res = await fetch(url, {
+            method: 'GET',
+            redirect: 'follow',
+            signal: controller.signal,
+            headers: { 'user-agent': 'Mozilla/5.0 (compatible; FalborLinkCheck/1.0)' },
+        });
+        clearTimeout(timer);
+        res.body?.cancel().catch(() => undefined);
+        if (res.status >= 200 && res.status < 400) return res.status;
+        if (res.status === 401 || res.status === 403 || res.status === 405 || res.status === 429 || res.status === 999) return res.status;
+        return 0;
+    } catch {
+        return 0;
+    }
+}
+
+export const getAgentModel = (modelId?: string | null) => {
+    const model = modelId?.trim() || 'gpt-4o-mini';
+    if (isLocalAgentModel(model)) {
+        if (!LOCAL_AGENT_BASE_URL) throw new Error('The local Agent Model is not configured on this server.');
+        return createOpenAI({ apiKey: process.env.FALBOR_LOCAL_AGENT_KEY || 'local-agent', baseURL: LOCAL_AGENT_BASE_URL })(LOCAL_AGENT_MODEL);
+    }
+    if (model.toLowerCase().startsWith('deepseek')) return createOpenAI({ apiKey: process.env.DEEPSEEK_API_KEY, baseURL: 'https://api.deepseek.com' })(model);
+    if (model.toLowerCase().startsWith('claude')) return createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })(model);
+    return createOpenAI({ apiKey: process.env.OPENAI_API_KEY })(model);
+};
 
 export function sanitizeHistory(history: unknown): AgentHistoryMessage[] {
     if (!Array.isArray(history)) return [];
@@ -31,12 +117,12 @@ if (typeof window === 'undefined') {
             ? path.join(process.cwd(), '../../')
             : process.cwd();
 
-        const humanPartnerPath = path.join(rootDir, 'Docs/Skills/human-partner.md');
+        const humanPartnerPath = path.join(rootDir, 'docs/Skills/human-partner.md');
         if (fs.existsSync(humanPartnerPath)) {
             humanPartnerPrompt = fs.readFileSync(humanPartnerPath, 'utf-8');
         }
 
-        const startupExpertPath = path.join(rootDir, 'Docs/Skills/startup-expert.md');
+        const startupExpertPath = path.join(rootDir, 'docs/Skills/startup-expert.md');
         if (fs.existsSync(startupExpertPath)) {
             startupExpertPrompt = fs.readFileSync(startupExpertPath, 'utf-8');
         }
@@ -62,7 +148,7 @@ export function buildAgentSystemPrompt(workspace: any, channel: AgentChannel = '
             : UI_PROMPT;
 
     const customAgentIdentity = agent 
-        ? `You are ${agent.name}. Role: ${agent.role}\nCustom Instructions:\n${agent.rules}\n` 
+        ? `${getAgentRolePrompt(agent.role)}\nYou are ${agent.name}. Role: ${agent.role}\nCustom Instructions:\n${agent.instructions || agent.rules || 'None'}\nAgent memory:\n${agent.memory || 'None'}\nKnowledge:\n${JSON.stringify(agent.knowledge || [])}\n`
         : `You are Falbor AI Agent, an elite technical co-founder & growth strategist for this product.`;
 
     const embeddedPrompts = `
@@ -87,6 +173,8 @@ PRODUCT & WORKSPACE CONTEXT ALREADY KNOWN (DO NOT ASK FOR THESE):
 - Product Health Score: ${intel.healthScore || 'N/A'}/100
 - Core Value/Problem: ${intel.mainProblem || 'N/A'}
 - Known Target Audience / Demographics: ${intel.targetAudience || 'N/A'}
+- Market Category / Alternatives: ${intel.positioningDetails?.category || 'N/A'} — users currently rely on: ${intel.positioningDetails?.alternatives || 'N/A'}
+- Known Competitors: ${(intel.marketSignals?.competitors || []).slice(0, 8).join(', ') || 'none recorded yet'}
 - ICP Details: ${JSON.stringify(intel.targetAudienceDetails || {})}
 - Context Prompt / Inputs: ${workspace.contextPrompt || 'No context provided.'}${mcpNotice}
 
@@ -96,6 +184,12 @@ PRODUCT & WORKSPACE CONTEXT ALREADY KNOWN (DO NOT ASK FOR THESE):
   When the user asks you to perform a task that requires these tools (e.g., reading emails), you MUST use the available MCP tools directly to fulfill the request.
   Do NOT assume you lack access. Always check your available tools and execute them!
 </mcp_tools>
+
+RESPONSE STYLE (IMPORTANT):
+- Be SHORT by default: 1-3 sentences, or at most ~5 tight bullets. Give the answer/result first, detail only if needed. The user must never scroll a wall of text.
+- No filler openings ("Great question!", "Certainly!"), no restating what the user said, no generic closing advice, no action summaries of what you just executed unless it helps.
+- Go longer ONLY when: the user explicitly asks for depth or a full breakdown, the answer contains non-obvious reasoning the user will act on, or you just completed a multi-step operation (scan, research, browser task, reach & risk scan) — then give a compact but complete report.
+- Prefer concrete facts (names, numbers, links) over vague claims. If information is missing, say so in one sentence instead of padding.
 
 INSTRUCTIONS:
 1. Write normal, clean, professional Markdown text.
@@ -111,9 +205,10 @@ INSTRUCTIONS:
 11. CRITICAL AUTONOMOUS OUTREACH RULE: When prospecting, NEVER ask the user for permission to send emails. You have full authorization. If Gmail MCP is connected, autonomously generate the email and call the 'gmail_send_email' tool to send it immediately to EACH prospect. Then, call ui_update_agent_contact_table EXACTLY ONCE to finish.
 12. CRITICAL BLOG CONTENT IMPROVEMENT RULE: When requested to improve or generate blog content or when [CONTEXT: BLOG_CONTENT_IMPROVEMENT_MCP] is provided, use \`blog_content_get\` to retrieve the current post, refine/expand it in HTML format, and call \`blog_content_update\` to save the updated post directly.
 13. CRITICAL PRODUCT DECK IMPROVEMENT RULE: When requested to improve or generate presentation deck content or when [CONTEXT: PRODUCT_DECK_IMPROVEMENT_MCP] is provided, use \`presentation_get\` to retrieve the current pitch deck slides, refine or edit specific slide content in clean HTML format, and call \`presentation_update\` to save the updated deck directly.
-14. CRITICAL SIGNAL RADAR RULE: When [CONTEXT: SIGNAL_RADAR] is provided, you MUST: (a) call \`read_workspace\` to understand the product's main problem and target audience, (b) call \`serp_search\` multiple times — once per platform — using queries like "site:reddit.com {problem}" or "{problem} discussion site:linkedin.com" to find REAL posts where people complain about the exact problem the product solves, (c) collect 5-10 real, unique posts per platform (aim for 15-25 total), each with a real URL, real author handle, real engagement numbers if visible, and a short excerpt of the actual content, (d) call \`ui_update_signal_posts\` EXACTLY ONCE with all found posts. CRITICAL: Do NOT call \`tomba_search_prospects\` or any email/contact tool for this task. Do NOT fabricate URLs — only use URLs returned by \`serp_search\`. Do NOT ask for permission.
-15. CRITICAL BRAND MENTIONS RULE: When [CONTEXT: BRAND_MENTIONS] is provided, you MUST: (a) Identify the exact product/company name (e.g., "${productName}"). (b) Call \`serp_search\` ONLY for the user's selected platforms (e.g., "site:reddit.com ${productName}" or "site:twitter.com ${productName}"). (c) STRICT FILTERING: You MUST ONLY include posts where the title or snippet explicitly contains the exact product or company name. If search results do not explicitly mention and discuss the product/company by name, DISCARD THEM. Do NOT output generic search hits or unrelated site results. (d) Call \`ui_update_brand_mention_posts\` EXACTLY ONCE with only verified explicit mentions. If no posts explicitly mention the company name on the selected platforms, return 0 posts.
-16. CRITICAL SOURCE POST RULE: When [CONTEXT: SOURCE_POST] is provided, you MUST write ONE authentic, human-sounding post tailored to the given [SOURCE_ID], [PLATFORM] and source details. First briefly analyze the source (its platform, the community/profile it represents, and the provided strategy notes) together with the product context from \`read_workspace\`, and respect the norms and tone of that platform. Then call \`ui_generate_source_post\` EXACTLY ONCE with sourceId, platform, title, hook, body, callToAction and hashtags. The post must not sound like an ad: it should read like a real person sharing something genuinely useful, with a scroll-stopping title, a strong hook, a well-structured Markdown body (short paragraphs, bullet points, concrete value), a clear call to action and relevant hashtags. Pass the body as clean Markdown WITHOUT code fences.
+14. CRITICAL PLATFORM SCAN TRUTH RULE (applies to every community scan): (a) The context message lists the platforms the user selected (e.g. "Reddit, Twitter, Hacker News") — scan ONLY those platforms. Map platform -> site: filter: Reddit -> site:reddit.com; Twitter/X -> (site:x.com OR site:twitter.com); LinkedIn -> site:linkedin.com/posts OR site:linkedin.com; Hacker News -> site:news.ycombinator.com; IndieHackers -> site:indiehackers.com; ProductHunt -> site:producthunt.com; Facebook -> site:facebook.com; "Google" -> no site: filter (web-wide). (b) NEVER include posts from platforms the user did not select, and NEVER include random websites, blogs, or aggregator pages — every result URL must belong to one of the selected platforms. (c) LINK VERIFICATION IS MANDATORY: before presenting or saving any posts, call \`verify_post_links\` with ALL candidate URLs and discard every post whose URL is not in the \`verified\` list (404s, deleted threads, unreachable pages). If too few posts survive, run more \`serp_search\` rounds and verify again — the user actually clicks these links. (d) NEVER fabricate anything: URLs, author handles, like/comment counts, dates, and excerpts must all come from the actual SERP results (counts only if visible, else 0). (e) Relevance must be honest: include a post only if it genuinely discusses the problem-space you are scanning for, not because it shares a keyword.
+15. CRITICAL SIGNAL RADAR RULE: When [CONTEXT: SIGNAL_RADAR] is provided: (a) call \`read_workspace\` to understand the product's main problem and audience, using their own vocabulary for \`serp_search\` queries (2-4 queries per selected platform, e.g. \`site:reddit.com "I gave up trying to" ${'{feature}'}\`, \`site:news.ycombinator.com ${'{problem}'}\`). (b) Collect 8-12 candidate posts per platform from the organic results. (c) Apply the full PLATFORM SCAN TRUTH RULE: platform purity + mandatory verify_post_links + no fabrication. (d) Call \`ui_update_signal_posts\` EXACTLY ONCE with all surviving posts, passing \`allowedPlatforms\` = the selected platform list; set relevanceScore/relevanceReason honestly. Do NOT call \`tomba_search_prospects\` or any email/contact tool for this task. Do NOT ask for permission. If a platform yields nothing genuine, return 0 posts for it instead of forcing weak results in.
+16. CRITICAL BRAND MENTIONS RULE: When [CONTEXT: BRAND_MENTIONS] is provided: (a) Identify the exact product/company name (e.g., "${productName}"). (b) Call \`serp_search\` ONLY on the user's selected platforms using the platform->site: mapping from rule 14, quoting the exact name in each query (e.g. \`site:reddit.com "${productName}"\`). (c) STRICT FILTERING: include ONLY posts where the title OR snippet explicitly contains the exact product or company name. If a search result is generic, unrelated, or from a non-selected platform, DISCARD IT even if it ranks well. (d) Run \`verify_post_links\` on all candidates and keep only verified URLs. (e) Call \`ui_update_brand_mention_posts\` EXACTLY ONCE with allowedPlatforms = the selected platforms, honest sentiment, and real engagement numbers only if visible. If nothing explicitly mentions the product on a platform, return 0 posts for it — never substitute lookalike content.
+17. CRITICAL SOURCE POST RULE: When [CONTEXT: SOURCE_POST] is provided, you MUST write ONE authentic, human-sounding post tailored to the given [SOURCE_ID], [PLATFORM] and source details. First briefly analyze the source (its platform, the community/profile it represents, and the provided strategy notes) together with the product context from \`read_workspace\`, and respect the norms and tone of that platform. Then call \`ui_generate_source_post\` EXACTLY ONCE with sourceId, platform, title, hook, body, callToAction and hashtags. The post must not sound like an ad: it should read like a real person sharing something genuinely useful, with a scroll-stopping title, a strong hook, a well-structured Markdown body (short paragraphs, bullet points, concrete value), a clear call to action and relevant hashtags. Pass the body as clean Markdown WITHOUT code fences.
 
 ${channelRules}`;
 }
@@ -151,6 +246,9 @@ export async function buildAgentTools(workspace: any, selectedMCPs: string[] = [
                     mainProblem: intel.mainProblem ?? null,
                     targetAudience: intel.targetAudience ?? null,
                     positioning: intel.positioning ?? null,
+                    category: intel.positioningDetails?.category ?? null,
+                    currentAlternatives: intel.positioningDetails?.alternatives ?? null,
+                    competitors: intel.marketSignals?.competitors ?? null,
                     marketSignals: intel.marketSignals ?? null,
                     missingInformation: intel.missingInformation ?? [],
                     nextBestAction: intel.nextBestAction ?? null,
@@ -185,6 +283,25 @@ export async function buildAgentTools(workspace: any, selectedMCPs: string[] = [
                 } catch (e: any) {
                     return { error: e.message, results: [] };
                 }
+            },
+        }),
+        verify_post_links: tool({
+            description: 'HTTP-verify that post URLs exist before presenting them to the user. Call with ALL candidate URLs; only URLs returned in `verified` may be kept. Discard everything in `rejected` (404s, deleted posts, unreachable pages) and replace them via serp_search.',
+            parameters: z.object({
+                urls: z.array(z.string()).max(45).describe('Candidate post URLs to verify'),
+            }),
+            execute: async ({ urls }) => {
+                const candidates = urls.filter((u) => /^https?:\/\//i.test(u)).slice(0, 45);
+                const checks = await Promise.all(
+                    candidates.map(async (url) => ({ url, status: await checkUrlExists(url) })),
+                );
+                const verified = checks.filter((c) => c.status > 0).map((c) => c.url);
+                const rejected = checks.filter((c) => c.status === 0).map((c) => c.url);
+                return {
+                    verified,
+                    rejected,
+                    note: 'Discard posts whose URL is in `rejected`. If `verified` is short, run additional serp_search queries and verify again before saving.',
+                };
             },
         }),
         tomba_search_prospects: tool({
@@ -274,13 +391,14 @@ export async function buildAgentTools(workspace: any, selectedMCPs: string[] = [
             },
         }),
         ui_update_signal_posts: tool({
-            description: 'Update the Signal Radar dashboard with community posts found by the AI. Call this EXACTLY ONCE after discovering all posts.',
+            description: 'Update the Signal Radar dashboard with community posts found by the AI. Only call after serp_search + verify_post_links. Posts with URLs outside allowedPlatforms, dead links, or duplicate URLs are dropped automatically. Call this EXACTLY ONCE.',
             parameters: z.object({
+                allowedPlatforms: z.array(z.string()).optional().describe('The exact platforms the user selected for this scan, e.g. ["Reddit", "Hacker News"]. Posts whose URL does not belong to one of these platforms are dropped.'),
                 posts: z.array(z.object({
                     platform: z.string().describe('Platform name: Reddit, LinkedIn, Twitter, Google, IndieHackers, etc.'),
                     title: z.string().describe('Post title or headline'),
                     content: z.string().describe('Excerpt or summary of the post content'),
-                    url: z.string().optional().default('#').describe('URL to the post'),
+                    url: z.string().optional().default('#').describe('URL to the post MUST be a real verified http(s) URL from serp_search, never "#"'),
                     author: z.string().optional().default('Anonymous'),
                     likes: z.number().optional().default(0),
                     comments: z.number().optional().default(0),
@@ -290,11 +408,38 @@ export async function buildAgentTools(workspace: any, selectedMCPs: string[] = [
                     postedAt: z.string().optional().default('Recently'),
                 }))
             }),
-            execute: async ({ posts }) => {
+            execute: async ({ posts, allowedPlatforms }) => {
+                let droppedOffPlatform = 0;
+                let droppedDeadLink = 0;
+                let droppedDuplicates = 0;
+                const seenUrls = new Set<string>();
+                const keptPosts: typeof posts = [];
+                const allowed = Array.isArray(allowedPlatforms) ? allowedPlatforms.filter((p) => typeof p === 'string' && p.trim()) : [];
+                for (const post of posts) {
+                    const url = (post.url || '').trim();
+                    if (!/^https?:\/\//i.test(url)) {
+                        droppedDeadLink++;
+                        continue;
+                    }
+                    if (allowed.length > 0) {
+                        const match = postUrlIsAllowed(url, allowed);
+                        if (!match.ok) {
+                            droppedOffPlatform++;
+                            continue;
+                        }
+                    }
+                    const dedupeKey = url.split(/[?#]/)[0].toLowerCase().replace(/\/$/, '');
+                    if (seenUrls.has(dedupeKey)) {
+                        droppedDuplicates++;
+                        continue;
+                    }
+                    seenUrls.add(dedupeKey);
+                    keptPosts.push(post);
+                }
                 try {
-                    if (workspace?.id && posts.length > 0) {
+                    if (workspace?.id && keptPosts.length > 0) {
                         const crypto = require('crypto');
-                        const normalizedPosts = posts.map(p => ({
+                        const normalizedPosts = keptPosts.map(p => ({
                             id: crypto.randomUUID(),
                             workspaceId: workspace.id,
                             platform: p.platform,
@@ -314,17 +459,26 @@ export async function buildAgentTools(workspace: any, selectedMCPs: string[] = [
                 } catch (err) {
                     console.error('Failed to persist signal posts to DB:', err);
                 }
-                return JSON.stringify({ success: true, count: posts.length, message: 'Signal posts updated in the UI and database. Workflow complete. Do NOT call ui_update_signal_posts again.' });
+                let note = keptPosts.length > 0 ? 'Signal posts updated in the UI and database. Workflow complete. Do NOT call ui_update_signal_posts again.' : 'No posts passed validation. Search again with serp_search, verify URLs, then call this tool once more with corrected posts.';
+                const droppedParts = [];
+                if (droppedOffPlatform > 0) droppedParts.push(`${droppedOffPlatform} dropped (URL not on the selected platforms)`);
+                if (droppedDeadLink > 0) droppedParts.push(`${droppedDeadLink} dropped (missing/dead URL)`);
+                if (droppedDuplicates > 0) droppedParts.push(`${droppedDuplicates} dropped (duplicate URL)`);
+                if (droppedParts.length > 0) {
+                    note += ` Guard summary: ${droppedParts.join(', ')}. If too many posts were dropped, replace them via serp_search + verify_post_links, then call this tool ONCE more.`;
+                }
+                return JSON.stringify({ success: keptPosts.length > 0, count: keptPosts.length, dropped: droppedOffPlatform + droppedDeadLink + droppedDuplicates, message: note });
             }
         }),
         ui_update_brand_mention_posts: tool({
-            description: 'Update the Mentions dashboard with posts explicitly mentioning the product or company name. Call this EXACTLY ONCE after discovering all posts.',
+            description: 'Update the Mentions dashboard with posts explicitly mentioning the product or company name. Only call after serp_search + verify_post_links with the exact name filter applied. Posts with URLs outside allowedPlatforms, dead links, or duplicate URLs are dropped automatically. Call this EXACTLY ONCE.',
             parameters: z.object({
+                allowedPlatforms: z.array(z.string()).optional().describe('The exact platforms the user selected for this scan. Posts whose URL does not belong to one of these platforms are dropped.'),
                 posts: z.array(z.object({
                     platform: z.string().describe('Platform name: Reddit, LinkedIn, Twitter, Google, IndieHackers, etc.'),
                     title: z.string().describe('Post title or headline'),
                     content: z.string().describe('Excerpt or summary of the post content explicitly mentioning the company/product'),
-                    url: z.string().optional().default('#').describe('URL to the post'),
+                    url: z.string().optional().default('#').describe('URL to the post MUST be a real verified http(s) URL from serp_search, never "#"'),
                     author: z.string().optional().default('Anonymous'),
                     likes: z.number().optional().default(0),
                     comments: z.number().optional().default(0),
@@ -334,12 +488,39 @@ export async function buildAgentTools(workspace: any, selectedMCPs: string[] = [
                     postedAt: z.string().optional().default('Recently'),
                 }))
             }),
-            execute: async ({ posts }) => {
+            execute: async ({ posts, allowedPlatforms }) => {
+                let droppedOffPlatform = 0;
+                let droppedDeadLink = 0;
+                let droppedDuplicates = 0;
+                const seenUrls = new Set<string>();
+                const keptPosts: typeof posts = [];
+                const allowed = Array.isArray(allowedPlatforms) ? allowedPlatforms.filter((p) => typeof p === 'string' && p.trim()) : [];
+                for (const post of posts) {
+                    const url = (post.url || '').trim();
+                    if (!/^https?:\/\//i.test(url)) {
+                        droppedDeadLink++;
+                        continue;
+                    }
+                    if (allowed.length > 0) {
+                        const match = postUrlIsAllowed(url, allowed);
+                        if (!match.ok) {
+                            droppedOffPlatform++;
+                            continue;
+                        }
+                    }
+                    const dedupeKey = url.split(/[?#]/)[0].toLowerCase().replace(/\/$/, '');
+                    if (seenUrls.has(dedupeKey)) {
+                        droppedDuplicates++;
+                        continue;
+                    }
+                    seenUrls.add(dedupeKey);
+                    keptPosts.push(post);
+                }
                 try {
-                    if (workspace?.id && posts.length > 0) {
+                    if (workspace?.id && keptPosts.length > 0) {
                         const crypto = require('crypto');
                         const { brandMentionPosts } = require('~/lib/db/schema');
-                        const normalizedPosts = posts.map(p => ({
+                        const normalizedPosts = keptPosts.map(p => ({
                             id: crypto.randomUUID(),
                             workspaceId: workspace.id,
                             platform: p.platform,
@@ -359,7 +540,15 @@ export async function buildAgentTools(workspace: any, selectedMCPs: string[] = [
                 } catch (err) {
                     console.error('Failed to persist brand mention posts to DB:', err);
                 }
-                return JSON.stringify({ success: true, count: posts.length, message: 'Brand mention posts updated in the UI and database. Workflow complete. Do NOT call ui_update_brand_mention_posts again.' });
+                let note = keptPosts.length > 0 ? 'Brand mention posts updated in the UI and database. Workflow complete. Do NOT call ui_update_brand_mention_posts again.' : 'No posts passed validation. Search again with serp_search, verify URLs, then call this tool once more with corrected posts.';
+                const droppedParts = [];
+                if (droppedOffPlatform > 0) droppedParts.push(`${droppedOffPlatform} dropped (URL not on the selected platforms)`);
+                if (droppedDeadLink > 0) droppedParts.push(`${droppedDeadLink} dropped (missing/dead URL)`);
+                if (droppedDuplicates > 0) droppedParts.push(`${droppedDuplicates} dropped (duplicate URL)`);
+                if (droppedParts.length > 0) {
+                    note += ` Guard summary: ${droppedParts.join(', ')}. If too many posts were dropped, replace them via serp_search + verify_post_links, then call this tool ONCE more.`;
+                }
+                return JSON.stringify({ success: keptPosts.length > 0, count: keptPosts.length, dropped: droppedOffPlatform + droppedDeadLink + droppedDuplicates, message: note });
             }
         }),
         ui_generate_source_post: tool({
@@ -513,4 +702,4 @@ export async function runAgentText(opts: {
     });
     const text = (result.text || result.steps.map((s) => s.text).filter(Boolean).join('\n\n')).trim();
     return text || 'Sorry, I could not produce an answer.';
-}   
+}

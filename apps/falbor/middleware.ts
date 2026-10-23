@@ -45,6 +45,8 @@ const PUBLIC_ROUTES = [
   "/api/auth/stripe/callback",
   "/visual-editor/api/stripe/webhook",
   "/api/cron/daily",
+  "/api/cron/agents",
+  "/api/cron/automation",
   "/docs"
 ];
 
@@ -100,7 +102,8 @@ export async function middleware(request: NextRequest) {
         path.startsWith("/api/templates/") ||
         path.startsWith("/marketers") ||
         path.startsWith("/b2b/") ||
-        path.startsWith("/docs")
+        path.startsWith("/docs") ||
+        path.startsWith("/api/automation/extension/")
       );
     };
 

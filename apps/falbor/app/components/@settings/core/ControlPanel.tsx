@@ -27,6 +27,7 @@ import CloudProvidersTab from '~/components/@settings/tabs/providers/cloud/Cloud
 import LocalProvidersTab from '~/components/@settings/tabs/providers/local/LocalProvidersTab';
 import McpTab from '~/components/@settings/tabs/mcp/McpTab';
 import SocialConnectionTab from '~/components/@settings/tabs/social/SocialConnectionTab';
+import PetsTab from '~/components/@settings/tabs/pets/PetsTab';
 
 interface ControlPanelProps {
   open: boolean;
@@ -64,6 +65,7 @@ export const ControlPanel = ({ open, onClose, activeTab, inline = false }: Contr
       case 'pricing': return <PricingTab />;
       case 'billing': return <BillingTab />;
       case 'settings': return <SettingsTab />;
+      case 'pets': return <PetsTab />;
       case 'notifications': return <NotificationsTab />;
       case 'features': return <FeaturesTab />;
       case 'data': return <DataTab />;

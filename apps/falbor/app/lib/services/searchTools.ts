@@ -85,6 +85,25 @@ export const webSearch = tool({
   },
 });
 
+export async function keywordResearchSearch(query: string): Promise<Array<{ url: string; title: string; snippet: string; source: 'tavily' | 'web' }>> {
+  if (process.env.TAVILY_API_KEY) {
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: process.env.TAVILY_API_KEY, query, search_depth: 'advanced', max_results: 8, include_answer: false }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (response.ok) {
+      const payload = await response.json();
+      return (payload.results || []).map((item: any) => ({ url: item.url, title: item.title || item.url, snippet: item.content || '', source: 'tavily' as const }));
+    }
+  }
+  const raw = await webSearch.execute?.({ query } as any, {} as any);
+  let results: Array<{ url?: string; title?: string; snippet?: string }> = [];
+  try { results = typeof raw === 'string' ? JSON.parse(raw) : []; } catch { results = []; }
+  return results.filter((item) => item.url && item.title).map((item) => ({ url: item.url!, title: item.title!, snippet: item.snippet || '', source: 'web' as const }));
+}
+
 export const readPageContent = tool({
   description: 'Fetch and read the raw text content of a specific public URL/webpage to extract details or perform research.',
   parameters: z.object({

@@ -17,13 +17,14 @@ export async function getAgentSessionsList(workspaceId: string) {
     if (!user) return [];
 
     let sessionsQuery = db.select().from(agentSessions).where(
-      eq(agentSessions.workspaceId, workspaceId)
+      and(eq(agentSessions.workspaceId, workspaceId), eq(agentSessions.userId, user.id))
     ).orderBy(desc(agentSessions.updatedAt));
 
     const sessions = await sessionsQuery;
 
     return sessions.map(s => ({
       id: s.id,
+      agentId: s.agentId,
       title: s.title,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
@@ -141,7 +142,7 @@ export async function getAgentSessionEvents(workspaceId: string, sessionId?: str
     let session;
     if (sessionId) {
       const [found] = await db.select().from(agentSessions).where(
-        and(eq(agentSessions.id, sessionId), eq(agentSessions.userId, user.id))
+        and(eq(agentSessions.id, sessionId), eq(agentSessions.workspaceId, workspaceId), eq(agentSessions.userId, user.id))
       );
       session = found;
     } else {
@@ -180,11 +181,50 @@ export async function saveAgentSessionEvents(workspaceId: string, events: any[],
 
     if (!user?.id) return;
 
+    const mergeEvents = (current: any[], incoming: any[]) => {
+      if (incoming.length === 0) return [];
+      const byId = new Map<string, any>();
+      const order: string[] = [];
+      const requestEventIds = new Map<string, string>();
+      for (const event of current) {
+        if (!event?.id || byId.has(event.id)) continue;
+        byId.set(event.id, event);
+        order.push(event.id);
+        if (event.requestId && (event.type === 'user' || event.type === 'text')) {
+          requestEventIds.set(`${event.requestId}:${event.type}`, event.id);
+        }
+      }
+      for (const event of incoming) {
+        if (!event?.id) continue;
+        const requestKey = event.requestId && (event.type === 'user' || event.type === 'text')
+          ? `${event.requestId}:${event.type}`
+          : null;
+        const existingId = requestKey ? requestEventIds.get(requestKey) : undefined;
+        if (existingId) {
+          byId.set(existingId, { ...byId.get(existingId), ...event, id: existingId });
+          continue;
+        }
+        if (!byId.has(event.id)) order.push(event.id);
+        byId.set(event.id, event);
+        if (requestKey) requestEventIds.set(requestKey, event.id);
+      }
+      return order.map((id) => byId.get(id)).filter(Boolean);
+    };
+
     if (sessionId) {
+      const [existingSession] = await db
+        .select({ events: agentSessions.events })
+        .from(agentSessions)
+        .where(and(
+          eq(agentSessions.id, sessionId),
+          eq(agentSessions.workspaceId, workspaceId),
+          eq(agentSessions.userId, user.id),
+        ));
+      const currentEvents = Array.isArray(existingSession?.events) ? existingSession.events : [];
       await db
         .update(agentSessions)
-        .set({ events, updatedAt: new Date() })
-        .where(eq(agentSessions.id, sessionId));
+        .set({ events: mergeEvents(currentEvents, events), updatedAt: new Date() })
+        .where(and(eq(agentSessions.id, sessionId), eq(agentSessions.workspaceId, workspaceId), eq(agentSessions.userId, user.id)));
     } else {
       const [existingSession] = await db.select().from(agentSessions).where(
         and(eq(agentSessions.workspaceId, workspaceId), eq(agentSessions.userId, user.id))
@@ -193,7 +233,7 @@ export async function saveAgentSessionEvents(workspaceId: string, events: any[],
       if (existingSession) {
         await db
           .update(agentSessions)
-          .set({ events, updatedAt: new Date() })
+          .set({ events: mergeEvents(Array.isArray(existingSession.events) ? existingSession.events : [], events), updatedAt: new Date() })
           .where(eq(agentSessions.id, existingSession.id));
       } else {
         await db.insert(agentSessions).values({

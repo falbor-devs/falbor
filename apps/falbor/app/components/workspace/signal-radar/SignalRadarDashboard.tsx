@@ -84,7 +84,7 @@ export function SignalRadarDashboard({ initialPosts, selectedPlatforms, workspac
                 <div>
                     <h2 className="text-xl font-bold text-falbor-elements-textPrimary flex items-center gap-2">
                         <span className="i-ph:broadcast w-5 h-5" />
-                        Signal Radar
+                        Signals
                     </h2>
                     <p className="text-sm text-falbor-elements-textSecondary mt-0.5">
                         Real conversations about your product's problem, found across the web

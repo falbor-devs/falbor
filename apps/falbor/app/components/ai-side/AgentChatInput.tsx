@@ -1,54 +1,124 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { IoStopCircle } from 'react-icons/io5';
-import { useStore } from '@nanostores/react';
-import { aiSidebarStore } from '~/lib/stores/aiSidebar';
-import { sendAgentMessage, stopAgent } from '~/lib/actions/agentChat';
-import { usePathname } from 'next/navigation';
-import { ArrowUpIcon } from 'lucide-react';
-import { classNames } from '~/utils/classNames';
-import { Badge } from '../ui';
-import { Dropdown, DropdownItem, DropdownSeparator, DropdownSub, DropdownSubTrigger, DropdownSubContent } from '~/components/ui/Dropdown';
-import { MCP_CONNECTORS } from '~/components/@settings/tabs/mcp/connectors';
-import { useMCPStore } from '~/lib/stores/mcp';
-import { SkillsDialog } from '~/components/skills/SkillsDialog';
-import { skillsStore } from '~/lib/stores/skills';
+import React, { useState, useRef, useMemo, useEffect } from "react";
+import { IoStopCircle } from "react-icons/io5";
+import { useStore } from "@nanostores/react";
+import { aiSidebarStore } from "~/lib/stores/aiSidebar";
+import { sendAgentMessage, stopAgent } from "~/lib/actions/agentChat";
+import { usePathname } from "next/navigation";
+import { ArrowUpIcon } from "lucide-react";
+import { classNames } from "~/utils/classNames";
+import { Badge } from "../ui";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownSeparator,
+  DropdownSub,
+  DropdownSubTrigger,
+  DropdownSubContent,
+} from "~/components/ui/Dropdown";
+import { MCP_CONNECTORS } from "~/components/@settings/tabs/mcp/connectors";
+import { useMCPStore } from "~/lib/stores/mcp";
+import { SkillsDialog } from "~/components/skills/SkillsDialog";
+import { skillsStore } from "~/lib/stores/skills";
 
 const FALBOR_SUGGESTIONS = [
   {
-    label: 'What can you help me with?',
-    prompt: 'What marketing strategy, acquisition channels, and growth tactics can you analyze for Falbor?',
+    label: "What can you help me with?",
+    prompt:
+      "What marketing strategy, acquisition channels, and growth tactics can you analyze for Falbor?",
   },
   {
-    label: 'Browse & audit competitor website',
-    prompt: 'Launch a Browser Use microVM session to inspect https://google.com and audit current search positioning for my product.',
+    label: "Browse & audit competitor website",
+    prompt:
+      "Launch a Browser Use microVM session to inspect https://google.com and audit current search positioning for my product.",
   },
   {
-    label: 'Generate marketing audit',
-    prompt: 'Can you generate a comprehensive marketing and target audience audit for my product?',
+    label: "Generate marketing audit",
+    prompt:
+      "Can you generate a comprehensive marketing and target audience audit for my product?",
   },
   {
-    label: 'How to get first 100 users?',
-    prompt: 'What are the most effective strategies and channels to get our first 100 paid customers?',
+    label: "How to get first 100 users?",
+    prompt:
+      "What are the most effective strategies and channels to get our first 100 paid customers?",
   },
 ];
 
-export const AgentChatInput = () => {
-  const isActive = useStore(aiSidebarStore.isActive);
-  const events = useStore(aiSidebarStore.events);
-  const pathname = usePathname();
-  const [chatInput, setChatInput] = useState('');
-  const [userRole, setUserRole] = useState<string>('owner');
-  const [blogInputError, setBlogInputError] = useState(false);
+let workspaceRoleCache: {
+  workspaceId: string;
+  role: string | null;
+  at: number;
+} | null = null;
+const WORKSPACE_ROLE_TTL_MS = 60000;
 
-  const isAgentContactPage = pathname?.includes('/agent-contact');
-  const isBlogContentPage = pathname?.includes('/blog-content');
+function loadWorkspaceRole(workspaceId: string): Promise<string | null> {
+  if (
+    workspaceRoleCache &&
+    workspaceRoleCache.workspaceId === workspaceId &&
+    Date.now() - workspaceRoleCache.at < WORKSPACE_ROLE_TTL_MS
+  ) {
+    return Promise.resolve(workspaceRoleCache.role);
+  }
+  return import("~/lib/actions/workspaceMembers")
+    .then(({ getWorkspaceMembers }) =>
+      getWorkspaceMembers(workspaceId).then((members) => {
+        let role: string | null = null;
+        if (Array.isArray(members)) {
+          const current = members.find((m) => m.isCurrentUser);
+          if (current) role = current.role;
+        }
+        workspaceRoleCache = { workspaceId, role, at: Date.now() };
+        return role;
+      }),
+    )
+    .catch(() => null);
+}
+
+type AgentChatInputProps = {
+  ready?: boolean;
+  activeOverride?: boolean;
+  onStop?: () => void;
+};
+
+export const AgentChatInput = ({
+  ready = true,
+  activeOverride = false,
+  onStop,
+}: AgentChatInputProps) => {
+  const storeIsActive = useStore(aiSidebarStore.isActive);
+  const isActive = storeIsActive || activeOverride;
+  const events = useStore(aiSidebarStore.events);
+  const currentAgent = useStore(aiSidebarStore.currentAgent);
+  const productLabSimulationId = useStore(
+    aiSidebarStore.productLabSimulationId,
+  );
+  const productLabAgents = useStore(aiSidebarStore.productLabAgents);
+  const productLabAgentIds = useStore(aiSidebarStore.productLabAgentIds);
+  const usesLocalAgent =
+    typeof currentAgent?.model === "string" &&
+    currentAgent.model.startsWith("falbor-local:");
+  const pathname = usePathname();
+  const [chatInput, setChatInput] = useState("");
+  const [userRole, setUserRole] = useState<string>("owner");
+  const [blogInputError, setBlogInputError] = useState(false);
+  const [queuedMessage, setQueuedMessage] = useState<string | null>(null);
+  const [imageData, setImageData] = useState<string | null>(null);
+  const [imageName, setImageName] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleStop = () => {
+    onStop?.();
+    stopAgent();
+  };
+
+  const isAgentContactPage = pathname?.includes("/agent-contact");
+  const isBlogContentPage = pathname?.includes("/blog-content");
 
   const [userBalance, setUserBalance] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('/api/user/credits')
+    fetch("/api/user/credits")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d && d.balance !== undefined) setUserBalance(Number(d.balance));
@@ -56,24 +126,16 @@ export const AgentChatInput = () => {
       .catch(() => { });
   }, [events, isActive]);
 
-  const activeWsId = pathname?.split('/')[2] || '';
+  const activeWsId = pathname?.split("/")[2] || "";
 
   useEffect(() => {
-    if (activeWsId) {
-      import('~/lib/actions/workspaceMembers').then(({ getWorkspaceMembers }) => {
-        getWorkspaceMembers(activeWsId)
-          .then((members) => {
-            if (Array.isArray(members)) {
-              const current = members.find((m) => m.isCurrentUser);
-              if (current) setUserRole(current.role);
-            }
-          })
-          .catch(() => { });
-      });
-    }
-  }, [pathname]);
+    if (!activeWsId) return;
+    loadWorkspaceRole(activeWsId).then((role) => {
+      if (role) setUserRole(role);
+    });
+  }, [activeWsId]);
 
-  const isViewer = userRole === 'viewer';
+  const isViewer = userRole === "viewer";
 
   const handleImproveBlog = () => {
     if (!chatInput.trim()) {
@@ -83,12 +145,12 @@ export const AgentChatInput = () => {
     }
 
     if (isActive) {
-      stopAgent();
+      handleStop();
       return;
     }
 
     setBlogInputError(false);
-    const workspaceId = pathname?.split('/')[2] || '';
+    const workspaceId = pathname?.split("/")[2] || "";
     const blogPrompt = `[CONTEXT: BLOG_CONTENT_IMPROVEMENT_MCP] [WORKSPACE_ID: ${workspaceId}] 
 The user is asking for improvements to their workspace blog post content.
 User instructions: "${chatInput.trim()}"
@@ -98,11 +160,12 @@ Target Action & Instructions:
 2. Apply the user's requested changes, tone adjustments, structural improvements, or additional sections.
 3. Automatically update and save the blog content back using the blogContent tools.`;
 
-    setChatInput('');
+    setChatInput("");
     sendAgentMessage(blogPrompt);
   };
 
-  const isProductDeckPage = pathname?.includes('/product-deck');
+  const isProductDeckPage = pathname?.includes("/product-deck");
+  const isProductLabPage = pathname?.includes("/product-lab");
 
   const handleImprovePresentation = () => {
     if (!chatInput.trim()) {
@@ -112,12 +175,12 @@ Target Action & Instructions:
     }
 
     if (isActive) {
-      stopAgent();
+      handleStop();
       return;
     }
 
     setBlogInputError(false);
-    const workspaceId = pathname?.split('/')[2] || '';
+    const workspaceId = pathname?.split("/")[2] || "";
     const deckPrompt = `[CONTEXT: PRODUCT_DECK_IMPROVEMENT_MCP] [WORKSPACE_ID: ${workspaceId}] 
 The user is asking for improvements to their workspace investor product pitch deck.
 User instructions: "${chatInput.trim()}"
@@ -127,22 +190,28 @@ Target Action & Instructions:
 2. Apply the user's requested changes to specific slides or the entire presentation deck.
 3. Automatically update and save the presentation slides back using the presentation tools.`;
 
-    setChatInput('');
+    setChatInput("");
     sendAgentMessage(deckPrompt);
   };
 
   const selectedMCPs = useMCPStore((state) => state.selectedMCPs);
   const toggleSelectedMCP = useMCPStore((state) => state.toggleSelectedMCP);
-  const mcpConfig = useMCPStore((state) => state.settings?.mcpConfig?.mcpServers || {});
+  const mcpConfig = useMCPStore(
+    (state) => state.settings?.mcpConfig?.mcpServers || {},
+  );
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [isSkillsDialogOpen, setIsSkillsDialogOpen] = useState(false);
 
   const allSkills = useStore(skillsStore);
-  const activeSkillsList = allSkills.filter(s => s.isActive);
+  const activeSkillsList = allSkills.filter((s) => s.isActive);
 
   const toggleSelectedSkill = (skillId: string) => {
-    setSelectedSkills(prev => prev.includes(skillId) ? prev.filter(id => id !== skillId) : [...prev, skillId]);
+    setSelectedSkills((prev) =>
+      prev.includes(skillId)
+        ? prev.filter((id) => id !== skillId)
+        : [...prev, skillId],
+    );
   };
 
   const [dbConnections, setDbConnections] = useState<any[]>([]);
@@ -150,7 +219,7 @@ Target Action & Instructions:
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    fetch('/api/mcp/connections', { cache: 'no-store' })
+    fetch("/api/mcp/connections", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data && Array.isArray(data.connections)) {
@@ -161,47 +230,73 @@ Target Action & Instructions:
           setDbConnections([]);
         }
       })
-      .catch((err) => console.error('Error fetching MCP connections:', err));
+      .catch((err) => console.error("Error fetching MCP connections:", err));
   }, []);
 
   useEffect(() => {
     const handleCustomAgentMsg = (e: any) => {
       if (e.detail?.prompt) {
-        sendAgentMessage(e.detail.prompt);
+        if (ready) sendAgentMessage(e.detail.prompt);
+        else setQueuedMessage(e.detail.prompt);
       }
     };
-    window.addEventListener('falbor:send_agent_message', handleCustomAgentMsg as any);
-    return () => window.removeEventListener('falbor:send_agent_message', handleCustomAgentMsg as any);
-  }, [sendAgentMessage]);
+    window.addEventListener(
+      "falbor:send_agent_message",
+      handleCustomAgentMsg as any,
+    );
+    return () =>
+      window.removeEventListener(
+        "falbor:send_agent_message",
+        handleCustomAgentMsg as any,
+      );
+  }, [ready]);
+
+  useEffect(() => {
+    if (!ready || !queuedMessage) return;
+    const message = queuedMessage;
+    setQueuedMessage(null);
+    sendAgentMessage(message);
+  }, [queuedMessage, ready]);
 
   // Display ALL MCP connectors
   const allConnectors = useMemo(() => {
-    return MCP_CONNECTORS.filter((connector) => connector.id !== 'custom');
+    return MCP_CONNECTORS.filter((connector) => connector.id !== "custom");
   }, []);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (isActive) {
-      stopAgent();
+      handleStop();
       return;
     }
-    if (!chatInput.trim() && selectedMCPs.length === 0 && selectedSkills.length === 0) return;
+    if (
+      !chatInput.trim() &&
+      !imageData &&
+      selectedMCPs.length === 0 &&
+      selectedSkills.length === 0 &&
+      productLabAgentIds.length === 0
+    )
+      return;
     let finalInput = chatInput.trim();
     if (selectedSkills.length > 0) {
-      finalInput = `${selectedSkills.map(s => `[Skill: ${s}]`).join(' ')} ${finalInput}`;
+      finalInput = `${selectedSkills.map((s) => `[Skill: ${s}]`).join(" ")} ${finalInput}`;
     }
-    setChatInput('');
+    const attachedImage = imageData || undefined;
+    setChatInput("");
+    setImageData(null);
+    setImageName(null);
     setSelectedSkills([]);
-    sendAgentMessage(finalInput);
+    if (ready) sendAgentMessage(finalInput, { imageData: attachedImage });
+    else setQueuedMessage(finalInput);
   };
 
   const handleStartGrowthAgent = () => {
     if (isActive) {
-      stopAgent();
+      handleStop();
       return;
     }
-    if (!useMCPStore.getState().selectedMCPs.includes('gmail')) {
-      useMCPStore.getState().toggleSelectedMCP('gmail');
+    if (!useMCPStore.getState().selectedMCPs.includes("gmail")) {
+      useMCPStore.getState().toggleSelectedMCP("gmail");
     }
     const prompt = `Find me people who are relevant to this project/product. 
 1. Read my product context/ICP if you have it. If not, just search broadly for our industry.
@@ -228,42 +323,66 @@ Target Action & Instructions:
     setChatInput(e.target.value);
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/") || file.size > 8 * 1024 * 1024) {
+      e.target.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageData(typeof reader.result === "string" ? reader.result : null);
+      setImageName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage(e as any);
     }
   };
 
-  const pendingQuestion = [...events].reverse().find((e) => e.type === 'options' && e.status === 'pending');
-  const activeQuestionTitle = pendingQuestion?.title ?? '';
+  const pendingQuestion = [...events]
+    .reverse()
+    .find((e) => e.type === "options" && e.status === "pending");
+  const activeQuestionTitle = pendingQuestion?.title ?? "";
   const rawOptions = pendingQuestion?.details ?? [];
   const recommendedOption = pendingQuestion?.recommended;
   const sortedOptions = useMemo(() => {
     if (!rawOptions.length) return [];
     if (!recommendedOption) return rawOptions;
-    const recommendedMatch = rawOptions.find((o) => o.toLowerCase().trim() === recommendedOption.toLowerCase().trim());
+    const recommendedMatch = rawOptions.find(
+      (o) => o.toLowerCase().trim() === recommendedOption.toLowerCase().trim(),
+    );
     if (!recommendedMatch) return rawOptions;
-    return [recommendedMatch, ...rawOptions.filter((o) => o !== recommendedMatch)];
+    return [
+      recommendedMatch,
+      ...rawOptions.filter((o) => o !== recommendedMatch),
+    ];
   }, [rawOptions, recommendedOption]);
 
-  const [selectedOption, setSelectedOption] = useState<string>('');
+  const [selectedOption, setSelectedOption] = useState<string>("");
 
   useEffect(() => {
     if (sortedOptions.length > 0) {
       setSelectedOption(sortedOptions[0]);
     } else {
-      setSelectedOption('');
+      setSelectedOption("");
     }
   }, [sortedOptions]);
 
   const handleOptionSelect = (selectedOptionText: string) => {
-    if (isActive) return;
-    sendAgentMessage(selectedOptionText, { apiText: `Selected option: ${selectedOptionText}` });
+    if (isActive || !ready) return;
+    sendAgentMessage(selectedOptionText, {
+      apiText: `Selected option: ${selectedOptionText}`,
+    });
   };
 
   const handleNextClick = () => {
-    if (!selectedOption || isActive) return;
+    if (!selectedOption || isActive || !ready) return;
     handleOptionSelect(selectedOption);
   };
 
@@ -272,15 +391,16 @@ Target Action & Instructions:
       onSubmit={handleSendMessage}
       className="p-3 relative max-w-[480px] w-full mx-auto"
     >
-
       {sortedOptions.length > 0 && !isActive && (
         <div className="p-3 border border-gray-300 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-t-lg animate-fade-in z-30">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">AI Question</span>
+            <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+              AI Question
+            </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleOptionSelect('Skipped question')}
+                onClick={() => handleOptionSelect("Skipped question")}
                 className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 px-2.5 py-1 rounded-md transition-colors"
               >
                 Skip
@@ -294,12 +414,18 @@ Target Action & Instructions:
               </button>
             </div>
           </div>
-          <p className="text-sm font-medium mb-3 text-gray-700 dark:text-white line-clamp-3 leading-snug">{activeQuestionTitle}</p>
+          <p className="text-sm font-medium mb-3 text-gray-700 dark:text-white line-clamp-3 leading-snug">
+            {activeQuestionTitle}
+          </p>
           <div className="flex flex-col gap-1.5 max-h-[480px] overflow-y-auto custom-scrollbar pr-1">
             {sortedOptions.map((option, idx) => {
               const letter = String.fromCharCode(65 + idx);
               const isSelected = selectedOption === option;
-              const isRecommended = idx === 0 || (recommendedOption && option.toLowerCase().trim() === recommendedOption.toLowerCase().trim());
+              const isRecommended =
+                idx === 0 ||
+                (recommendedOption &&
+                  option.toLowerCase().trim() ===
+                  recommendedOption.toLowerCase().trim());
 
               return (
                 <button
@@ -310,15 +436,17 @@ Target Action & Instructions:
                     "flex items-center rounded-md gap-2.5 p-2 text-left group relative",
                     isSelected
                       ? "bg-[#0099ff]/15 text-blue-600 dark:text-blue-400"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-800/60 border-transparent text-gray-700 dark:text-gray-300"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-800/60 border-transparent text-gray-700 dark:text-gray-300",
                   )}
                 >
-                  <span className={classNames(
-                    "rounded-md w-5 h-5 flex items-center justify-center text-xs shrink-0 font-bold",
-                    isSelected
-                      ? "bg-[#0099ff] text-white"
-                      : "bg-[#E9E9E9] dark:bg-gray-800 text-black dark:text-gray-200 group-hover:bg-[#0099ff] group-hover:text-white"
-                  )}>
+                  <span
+                    className={classNames(
+                      "rounded-md w-5 h-5 flex items-center justify-center text-xs shrink-0 font-bold",
+                      isSelected
+                        ? "bg-[#0099ff] text-white"
+                        : "bg-[#E9E9E9] dark:bg-gray-800 text-black dark:text-gray-200 group-hover:bg-[#0099ff] group-hover:text-white",
+                    )}
+                  >
                     {letter}
                   </span>
 
@@ -327,7 +455,7 @@ Target Action & Instructions:
                   </span>
 
                   {isRecommended && (
-                    <Badge variant='outline' size='md' >
+                    <Badge variant="outline" size="md">
                       Recommended
                     </Badge>
                   )}
@@ -342,7 +470,9 @@ Target Action & Instructions:
         <div className="relative z-0 -mb-2">
           <div className="bg-[#EBEBEB] dark:bg-[#1C2A3A] px-4 pt-3 pb-5 flex justify-between items-center text-sm rounded-t-[8px]">
             <div className="font-medium flex items-center gap-2">
-              <span className="text-xs font-semibold text-gray-900 dark:text-blue-100">Let your AI improve your blog</span>
+              <span className="text-xs font-semibold text-gray-900 dark:text-blue-100">
+                Let your AI improve your blog
+              </span>
             </div>
             <button
               type="button"
@@ -360,7 +490,9 @@ Target Action & Instructions:
         <div className="relative z-0 -mb-2">
           <div className="bg-[#EBEBEB] dark:bg-[#251D3A] px-4 pt-3 pb-5 flex justify-between items-center text-sm rounded-t-[8px]">
             <div className="font-medium flex items-center gap-2">
-              <span className="text-xs font-semibold text-gray-900 dark:text-purple-100">Let your AI refine your presentation deck</span>
+              <span className="text-xs font-semibold text-gray-900 dark:text-purple-100">
+                Let your AI refine your presentation deck
+              </span>
             </div>
             <button
               type="button"
@@ -378,7 +510,9 @@ Target Action & Instructions:
         <div className="relative z-0 -mb-2">
           <div className="bg-[#EBEBEB] dark:bg-[#282828] px-4 pt-3 pb-5 flex justify-between items-center text-sm rounded-t-xl">
             <div className="font-medium flex items-center gap-2">
-              <span className="text-sm text-gray-900 dark:text-orange-100">Let's find you the best prospects</span>
+              <span className="text-sm text-gray-900 dark:text-orange-100">
+                Let's find you the best prospects
+              </span>
             </div>
             <button
               type="button"
@@ -393,7 +527,9 @@ Target Action & Instructions:
       )}
       <div className="relative z-0 -mb-2">
         <div className="bg-[#EBEBEB] dark:bg-[#282828] px-4 pt-3 pb-5 flex justify-between items-center text-sm rounded-t-xl">
-          <span className="text-[#8e8e93] dark:text-[#909095] font-medium text-[12px]">Connect your apps</span>
+          <span className="text-[#8e8e93] dark:text-[#909095] font-medium text-[12px]">
+            Connect your apps
+          </span>
           <div className="flex items-center gap-1.5">
             {allConnectors.slice(0, 6).map((c) => {
               const isSelected = selectedMCPs.includes(c.id);
@@ -402,17 +538,23 @@ Target Action & Instructions:
                   key={c.id}
                   type="button"
                   onClick={() => insertConnector(c.id)}
-                  title={`${c.name} (${isSelected ? 'Selected' : 'Click to select'})`}
-                  className={`p-0.5 rounded transition-transform hover:scale-110 ${isSelected ? 'ring-1 ring-blue-500' : 'opacity-90 hover:opacity-100'}`}
+                  title={`${c.name} (${isSelected ? "Selected" : "Click to select"})`}
+                  className={`p-0.5 rounded transition-transform hover:scale-110 ${isSelected ? "ring-1 ring-blue-500" : "opacity-90 hover:opacity-100"}`}
                 >
-                  <img src={c.logo} alt={c.name} className="w-4 h-4 object-contain" />
+                  <img
+                    src={c.logo}
+                    alt={c.name}
+                    className="w-4 h-4 object-contain"
+                  />
                 </button>
               );
             })}
           </div>
         </div>
       </div>
-      <div className={`flex flex-col border bg-white dark:bg-[#212121] ${blogInputError ? 'border-red-500 border-2 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'border-black/10 dark:border-white/10'} gap-2 p-3 bg-transparent rounded-xl relative z-10 focus-within:border-gray-400 dark:focus-within:border-white/20 transition-all`}>
+      <div
+        className={`flex flex-col border bg-white dark:bg-[#212121] ${blogInputError ? "border-red-500 border-2 shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "border-black/10 dark:border-white/10"} gap-2 p-3 bg-transparent rounded-xl relative z-10 focus-within:border-gray-400 dark:focus-within:border-white/20 transition-all`}
+      >
         {selectedMCPs.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 px-1 pt-1 pb-1">
             {selectedMCPs.map((mcpId) => {
@@ -422,7 +564,13 @@ Target Action & Instructions:
                   key={mcpId}
                   className="inline-flex items-center gap-1 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-md px-2 py-0.5 text-xs font-medium"
                 >
-                  {connector?.logo && <img src={connector.logo} className="w-6 h-6 object-contain" alt="" />}
+                  {connector?.logo && (
+                    <img
+                      src={connector.logo}
+                      className="w-6 h-6 object-contain"
+                      alt=""
+                    />
+                  )}
                   <span>@{mcpId}</span>
                   <button
                     type="button"
@@ -459,6 +607,35 @@ Target Action & Instructions:
             })}
           </div>
         )}
+        {isProductLabPage && productLabAgentIds.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 px-1 pt-1 pb-1">
+            {productLabAgentIds.map((agentId) => {
+              const agent = productLabAgents.find(
+                (item) => item.id === agentId,
+              );
+              return (
+                <span
+                  key={agentId}
+                  className="inline-flex items-center gap-1 dark:text-white rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs font-medium dark:border-gray-700 dark:bg-gray-900"
+                >
+                  <i className="i-ph:user-circle text-sm" />
+                  <span>{agent?.name || "Agent"}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      aiSidebarStore.setProductLabAgentIds(
+                        productLabAgentIds.filter((id) => id !== agentId),
+                      )
+                    }
+                    className="ml-0.5 text-xs hover:text-red-500"
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex-1 flex gap-2 relative overflow-hidden">
           {sortedOptions.length > 0 && (
@@ -473,21 +650,45 @@ Target Action & Instructions:
             onKeyDown={handleKeyDown}
             placeholder={
               isViewer
-                ? 'Viewers cannot send messages to AI Agent'
+                ? "Viewers cannot send messages to AI Agent"
                 : isActive
-                  ? 'AI is working... Click stop to pause'
+                  ? "AI is working... Click stop to pause"
                   : sortedOptions.length > 0
-                    ? 'Or type a custom answer...'
-                    : 'What is your purpose for today?'
+                    ? "Or type a custom answer..."
+                    : "What is your purpose for today?"
             }
             className="w-full h-full min-h-[50px] bg-transparent px-2 py-1 text-sm text-gray-900 dark:text-white caret-gray-900 dark:caret-white focus:outline-none placeholder-gray-400 disabled:opacity-60 resize-none"
           />
         </div>
 
+        {imageName && (
+          <div className="flex items-center gap-2 px-1 text-xs text-gray-600 dark:text-gray-300">
+            <i className="i-ph:image text-blue-500" />
+            <span className="truncate">{imageName}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setImageData(null);
+                setImageName(null);
+              }}
+              className="text-gray-400 hover:text-red-500"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex justify-between items-center pt-1">
           {/* Left side: Skills */}
           <div className="flex items-center gap-1">
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handleImageChange}
+              className="hidden"
+            />
             <Dropdown
               side="top"
               align="start"
@@ -502,6 +703,14 @@ Target Action & Instructions:
                 </button>
               }
             >
+              <DropdownItem
+                disabled={isActive || isViewer}
+                onSelect={() => imageInputRef.current?.click()}
+              >
+                <i className="i-ph:image text-sm" />
+                Upload from computer
+              </DropdownItem>
+              <DropdownSeparator />
               <DropdownSub>
                 <DropdownSubTrigger>
                   <i className="i-ph:plugs text-sm" /> Connectors
@@ -509,8 +718,16 @@ Target Action & Instructions:
                 <DropdownSubContent alignOffset={-230}>
                   <div className="max-h-[260px] overflow-y-auto custom-scrollbar">
                     {allConnectors.map((connector) => {
-                      const hasLocalConnection = Object.keys(mcpConfig).some((key) => key.startsWith(`${connector.id}-`));
-                      const hasDbConnection = Array.isArray(dbConnections) && dbConnections.some((dbc) => dbc.connectorId === connector.id || dbc.connector_id === connector.id);
+                      const hasLocalConnection = Object.keys(mcpConfig).some(
+                        (key) => key.startsWith(`${connector.id}-`),
+                      );
+                      const hasDbConnection =
+                        Array.isArray(dbConnections) &&
+                        dbConnections.some(
+                          (dbc) =>
+                            dbc.connectorId === connector.id ||
+                            dbc.connector_id === connector.id,
+                        );
                       const isConnected = hasLocalConnection || hasDbConnection;
                       const isSelected = selectedMCPs.includes(connector.id);
 
@@ -521,16 +738,29 @@ Target Action & Instructions:
                             e.preventDefault();
                             if (isConnected) insertConnector(connector.id);
                           }}
-                          className={classNames(!isConnected && 'opacity-60 cursor-not-allowed')}
+                          className={classNames(
+                            !isConnected && "opacity-60 cursor-not-allowed",
+                          )}
                         >
                           <div className="flex items-center justify-between w-full min-w-[140px]">
                             <div className="flex items-center gap-2">
-                              <img src={connector.logo} className="w-4 h-4 object-contain shrink-0" alt="" />
+                              <img
+                                src={connector.logo}
+                                className="w-4 h-4 object-contain shrink-0"
+                                alt=""
+                              />
                               <span className="truncate">{connector.name}</span>
                             </div>
                             <div className="flex items-center gap-1 shrink-0 ml-2">
-                              {isSelected && <i className="i-ph:check text-[#0099ff] text-xs font-bold" />}
-                              {!isConnected && <div className="i-ph:warning-circle text-orange-400 text-xs opacity-80" title="Not connected" />}
+                              {isSelected && (
+                                <i className="i-ph:check text-[#0099ff] text-xs font-bold" />
+                              )}
+                              {!isConnected && (
+                                <div
+                                  className="i-ph:warning-circle text-orange-400 text-xs opacity-80"
+                                  title="Not connected"
+                                />
+                              )}
                             </div>
                           </div>
                         </DropdownItem>
@@ -542,13 +772,20 @@ Target Action & Instructions:
 
               <DropdownSub>
                 <DropdownSubTrigger>
-                  <img src="/icons/skills.svg" className="w-4 h-4 object-contain" alt="" /> Skills
+                  <img
+                    src="/icons/skills.svg"
+                    className="w-4 h-4 object-contain"
+                    alt=""
+                  />{" "}
+                  Skills
                 </DropdownSubTrigger>
                 <DropdownSubContent alignOffset={-200}>
                   {activeSkillsList.length === 0 ? (
-                    <div className="text-xs text-gray-500 p-2 text-center w-full min-w-[140px]">No active skills</div>
+                    <div className="text-xs text-gray-500 p-2 text-center w-full min-w-[140px]">
+                      No active skills
+                    </div>
                   ) : (
-                    activeSkillsList.map(skill => (
+                    activeSkillsList.map((skill) => (
                       <DropdownItem
                         key={skill.id}
                         onSelect={(e) => {
@@ -562,7 +799,9 @@ Target Action & Instructions:
                             <i className="i-ph:magic-wand text-sm text-gray-500" />
                             <span className="truncate">{skill.name}</span>
                           </div>
-                          {selectedSkills.includes(skill.id) && <i className="i-ph:check text-[#0099ff] text-xs font-bold" />}
+                          {selectedSkills.includes(skill.id) && (
+                            <i className="i-ph:check text-[#0099ff] text-xs font-bold" />
+                          )}
                         </div>
                       </DropdownItem>
                     ))
@@ -580,13 +819,75 @@ Target Action & Instructions:
                 </DropdownSubContent>
               </DropdownSub>
             </Dropdown>
+            {isProductLabPage && productLabSimulationId && (
+              <Dropdown
+                side="top"
+                align="start"
+                className="w-64"
+                trigger={
+                  <button
+                    type="button"
+                    disabled={isActive || isViewer}
+                    title="Invoke Product Lab agents"
+                    className="flex h-5 w-6 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-40 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                  >
+                    <i className="i-ph:users-three text-lg" />
+                  </button>
+                }
+              >
+                <div className="px-2 py-1.5 text-xs font-medium text-gray-500">
+                  Invoke Product Lab agent
+                </div>
+                {productLabAgents.length === 0 ? (
+                  <div className="px-2 py-2 text-xs text-gray-500">
+                    No simulation agents available
+                  </div>
+                ) : (
+                  productLabAgents.map((agent) => {
+                    const selected = productLabAgentIds.includes(agent.id);
+                    return (
+                      <DropdownItem
+                        key={agent.id}
+                        active={selected}
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          aiSidebarStore.setProductLabAgentIds(
+                            selected
+                              ? productLabAgentIds.filter(
+                                (id) => id !== agent.id,
+                              )
+                              : [...productLabAgentIds, agent.id],
+                          );
+                        }}
+                      >
+                        <i
+                          className={
+                            selected
+                              ? "i-ph:check-circle text-[#0099ff]"
+                              : "i-ph:user-circle"
+                          }
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {agent.name}
+                        </span>
+                        <span className="truncate text-xs text-gray-500">
+                          {agent.role || "Evaluator"}
+                        </span>
+                      </DropdownItem>
+                    );
+                  })
+                )}
+              </Dropdown>
+            )}
           </div>
 
           {/* Right side: Credit Balance & Send / Stop */}
           <div className="flex items-center gap-2">
             {userBalance !== null && (
               <a
-                href={activeWsId ? `/workspace/${activeWsId}/upgrade` : '/upgrade'}
+                href={
+                  activeWsId ? `/workspace/${activeWsId}/upgrade` : "/upgrade"
+                }
                 title="View Subscription & Credits"
                 className="text-[11px] py-2 px-2 text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 bg-gray-100 hover:bg-purple-50 dark:bg-gray-800/60 dark:hover:bg-purple-950/40 rounded-md transition-colors flex items-center gap-1"
               >
@@ -597,7 +898,7 @@ Target Action & Instructions:
             {isActive ? (
               <button
                 type="button"
-                onClick={stopAgent}
+                onClick={handleStop}
                 title="Stop AI Response"
                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors shrink-0"
               >
@@ -607,10 +908,18 @@ Target Action & Instructions:
               <button
                 type="submit"
                 disabled={
-                  (!chatInput.trim() && selectedMCPs.length === 0 && selectedSkills.length === 0) ||
-                  (userBalance !== null && userBalance <= 0)
+                  (!chatInput.trim() &&
+                    !imageData &&
+                    selectedMCPs.length === 0 &&
+                    selectedSkills.length === 0 &&
+                    productLabAgentIds.length === 0) ||
+                  (userBalance !== null && userBalance <= 0 && !usesLocalAgent)
                 }
-                title={userBalance !== null && userBalance <= 0 ? 'Insufficient credits — upgrade plan' : 'Send Message'}
+                title={
+                  userBalance !== null && userBalance <= 0 && !usesLocalAgent
+                    ? "Insufficient credits — upgrade plan"
+                    : "Send Message"
+                }
                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#0099ff]/20 text-[#0099ff] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
               >
                 <ArrowUpIcon className="text-sm" />
@@ -620,7 +929,10 @@ Target Action & Instructions:
         </div>
       </div>
 
-      <SkillsDialog open={isSkillsDialogOpen} onOpenChange={setIsSkillsDialogOpen} />
+      <SkillsDialog
+        open={isSkillsDialogOpen}
+        onOpenChange={setIsSkillsDialogOpen}
+      />
     </form>
   );
 };

@@ -1,5 +1,5 @@
 import type { TabType } from './types';
-import { User, Settings, Sliders, Bell, Star, Database, Cloud, Laptop, Github, Wrench, List, LogOut, Brain, CreditCard, Receipt, Share2 } from 'lucide-react';
+import { User, Settings, Sliders, Bell, Star, Database, Cloud, Laptop, Github, Wrench, List, LogOut, Brain, CreditCard, Receipt, Share2, PawPrint } from 'lucide-react';
 
 const GitLabIcon = () => (
   <svg viewBox="0 0 24 24" className="w-4 h-4">
@@ -43,6 +43,7 @@ export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string
   pricing: CreditCard,
   billing: Receipt,
   settings: Sliders,
+  pets: PawPrint,
   notifications: Bell,
   features: Star,
   data: Database,
@@ -65,6 +66,7 @@ export const TAB_LABELS: Record<TabType, string> = {
   pricing: 'Pricing',
   billing: 'Billing',
   settings: 'General',
+  pets: 'Pets',
   notifications: 'Notifications',
   features: 'Features',
   data: 'Data Management',
@@ -87,6 +89,7 @@ export const TAB_DESCRIPTIONS: Record<TabType, string> = {
   pricing: 'Upgrade plans and add balance',
   billing: 'View billing history and purchases',
   settings: 'Configure application preferences',
+  pets: 'Choose and show your workspace pet',
   notifications: 'View and manage your notifications',
   features: 'Explore new and upcoming features',
   data: 'Manage your data and storage',
@@ -106,7 +109,8 @@ export const TAB_DESCRIPTIONS: Record<TabType, string> = {
 export const DEFAULT_TAB_CONFIG = [
   
   { id: 'settings', visible: true, window: 'user' as const, order: -6 },
-  { id: 'profile', visible: true, window: 'user' as const, order: -5 },
+  { id: 'pets', visible: true, window: 'user' as const, order: -5 },
+  { id: 'profile', visible: true, window: 'user' as const, order: -4 },
   { id: 'pricing', visible: true, window: 'user' as const, order: -3 },
   { id: 'billing', visible: true, window: 'user' as const, order: -2 },
   { id: 'memories', visible: true, window: 'user' as const, order: -1 },

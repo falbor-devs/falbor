@@ -96,10 +96,10 @@ export const SkillCreator: React.FC<SkillCreatorProps> = ({ onBack, onSkillCreat
                   gradientUnits="userSpaceOnUse"
                   gradientTransform="rotate(-45)"
                 >
-                  <stop offset="0%" stopColor="#B12B06" stopOpacity="0%"></stop>
-                  <stop offset="40%" stopColor="#B12B06" stopOpacity="80%"></stop>
-                  <stop offset="50%" stopColor="#B12B06" stopOpacity="80%"></stop>
-                  <stop offset="100%" stopColor="#B12B06" stopOpacity="0%"></stop>
+                  <stop offset="0%" stopColor="#006FB8" stopOpacity="0%"></stop>
+                  <stop offset="40%" stopColor="#006FB8" stopOpacity="80%"></stop>
+                  <stop offset="50%" stopColor="#006FB8" stopOpacity="80%"></stop>
+                  <stop offset="100%" stopColor="#006FB8" stopOpacity="0%"></stop>
                 </linearGradient>
                 <linearGradient id="shine-gradient">
                   <stop offset="0%" stopColor="white" stopOpacity="0%"></stop>

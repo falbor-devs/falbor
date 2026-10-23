@@ -1,22 +1,34 @@
 import { NextResponse } from 'next/server';
-import { db } from '~/lib/db';
-import { googleAdsConnections } from '~/lib/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { requireMetaContext } from '~/lib/services/metaAuth';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const workspaceId = searchParams.get('workspaceId');
 
   if (!workspaceId) {
-    return NextResponse.json({ connected: false });
+    return NextResponse.json({ connected: false, accounts: [] });
   }
 
-  const connection = await db.query.googleAdsConnections.findFirst({
-    where: and(
-      eq(googleAdsConnections.workspaceId, workspaceId),
-      eq(googleAdsConnections.customerId, 'meta')
-    ),
-  });
-
-  return NextResponse.json({ connected: !!connection?.refreshToken });
+  try {
+    const context = await requireMetaContext(workspaceId);
+    return NextResponse.json({
+      connected: true,
+      enabledAccountId: context.adAccountId,
+      accountName: context.accountName,
+      accounts: [
+        {
+          adAccountId: context.adAccountId,
+          name: context.accountName,
+        },
+      ],
+    });
+  } catch (err: any) {
+    const message = err?.message || 'unknown_error';
+    if (message === 'Unauthorized' || message === 'Forbidden') {
+      return NextResponse.json({ error: message }, { status: message === 'Forbidden' ? 403 : 401 });
+    }
+    return NextResponse.json({ connected: false, accounts: [] });
+  }
 }

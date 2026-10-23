@@ -1,49 +1,84 @@
-'use client';
-import { motion, type Variants } from 'framer-motion';
-import { usePathname, useSearchParams, useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { toast } from 'react-toastify';
-import { Dialog, DialogButton, DialogDescription, DialogRoot, DialogTitle } from '~/components/ui/Dialog';
-import { ThemeSwitch } from '~/components/ui/ThemeSwitch';
-import { TAB_ICONS, TAB_LABELS, DEFAULT_TAB_CONFIG } from '~/components/@settings/core/constants';
-import { tabConfigurationStore, resetTabConfiguration, settingsOpenStore, settingsTabStore, blinkPricingStore, chatSettingsOpenStore } from '~/lib/stores/settings';
-import type { TabType } from '~/components/@settings/core/types';
-import { SettingsButton } from '~/components/ui/SettingsButton';
-import { Button } from '~/components/ui/Button';
-import { db, deleteById, getAll, chatId, type ChatHistoryItem, useChatHistory } from '~/lib/persistence';
-import { createWorkspace, getUserWorkspaces, updateWorkspaceName } from '~/lib/actions/workspaces';
-import { WorkspaceSettingsModal } from '~/components/workspace/workspace-settings/WorkspaceSettingsModal';
-import { cubicEasingFn } from '~/utils/easings';
-import { HistoryItem } from './HistoryItem';
-import { binDates } from './date-binning';
-import { useSearchFilter } from '~/lib/hooks/useSearchFilter';
-import { classNames } from '~/utils/classNames';
-import { useStore } from '@nanostores/react';
-import { profileStore } from '~/lib/stores/profile';
-import { ControlPanel } from '~/components/@settings';
-import { useAuth } from '~/hooks/useAuth';
-import { sidebarOpen, sidebarPinned } from '~/lib/stores/sidebar';
-import { chatStore } from '~/lib/stores/chat';
-import { DropdownSeparator, Dropdown, DropdownItem } from '../ui/Dropdown';
-import { McpTools } from '../chat/tools/MCPTools';
-import { MCP_CONNECTORS } from '../@settings/tabs/mcp/connectors';
-import { useMCPStore } from '~/lib/stores/mcp';
-import { Badge, Input, Tooltip } from '../ui';
-import Link from 'next/link';
-import { SkillsDialog } from '../skills/SkillsDialog';
-import { aiSidebarStore } from '~/lib/stores/aiSidebar';
-import { BILLING_CONFIG, type PlanId } from '~/lib/billing/config';
+"use client";
+import { motion, type Variants } from "framer-motion";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+} from "react";
+import { toast } from "react-toastify";
+import {
+  Dialog,
+  DialogButton,
+  DialogDescription,
+  DialogRoot,
+  DialogTitle,
+} from "~/components/ui/Dialog";
+import { ThemeSwitch } from "~/components/ui/ThemeSwitch";
+import {
+  TAB_ICONS,
+  TAB_LABELS,
+  DEFAULT_TAB_CONFIG,
+} from "~/components/@settings/core/constants";
+import {
+  tabConfigurationStore,
+  resetTabConfiguration,
+  settingsOpenStore,
+  settingsTabStore,
+  blinkPricingStore,
+  chatSettingsOpenStore,
+} from "~/lib/stores/settings";
+import type { TabType } from "~/components/@settings/core/types";
+import { SettingsButton } from "~/components/ui/SettingsButton";
+import { Button } from "~/components/ui/Button";
+import {
+  db,
+  deleteById,
+  getAll,
+  chatId,
+  type ChatHistoryItem,
+  useChatHistory,
+} from "~/lib/persistence";
+import {
+  createWorkspace,
+  getUserWorkspaces,
+  updateWorkspaceName,
+} from "~/lib/actions/workspaces";
+import { WorkspaceSettingsModal } from "~/components/workspace/workspace-settings/WorkspaceSettingsModal";
+import { cubicEasingFn } from "~/utils/easings";
+import { HistoryItem } from "./HistoryItem";
+import { binDates } from "./date-binning";
+import { useSearchFilter } from "~/lib/hooks/useSearchFilter";
+import { classNames } from "~/utils/classNames";
+import { useStore } from "@nanostores/react";
+import { profileStore } from "~/lib/stores/profile";
+import { ControlPanel } from "~/components/@settings";
+import { useAuth } from "~/hooks/useAuth";
+import { sidebarOpen, sidebarPinned } from "~/lib/stores/sidebar";
+import { chatStore } from "~/lib/stores/chat";
+import { DropdownSeparator, Dropdown, DropdownItem } from "../ui/Dropdown";
+import { McpTools } from "../chat/tools/MCPTools";
+import { MCP_CONNECTORS } from "../@settings/tabs/mcp/connectors";
+import { useMCPStore } from "~/lib/stores/mcp";
+import { Badge, Input, Tooltip } from "../ui";
+import Link from "next/link";
+import { SkillsDialog } from "../skills/SkillsDialog";
+import { aiSidebarStore } from "~/lib/stores/aiSidebar";
+import { BILLING_CONFIG, type PlanId } from "~/lib/billing/config";
+import { Lightbulb, Target } from "lucide-react";
 
 const squareMenuVariants = {
   closed: {
-    width: '70px',
+    width: "70px",
     transition: {
       duration: 0.2,
       ease: cubicEasingFn,
     },
   },
   open: {
-    width: '260px',
+    width: "260px",
     transition: {
       duration: 0.2,
       ease: cubicEasingFn,
@@ -54,7 +89,7 @@ const squareMenuVariants = {
 const fullMenuVariants = {
   closed: {
     opacity: 0,
-    visibility: 'hidden',
+    visibility: "hidden",
     width: 0,
     transition: {
       duration: 0.2,
@@ -63,8 +98,8 @@ const fullMenuVariants = {
   },
   open: {
     opacity: 1,
-    visibility: 'initial',
-    width: '260px',
+    visibility: "initial",
+    width: "260px",
     transition: {
       duration: 0.2,
       ease: cubicEasingFn,
@@ -73,8 +108,8 @@ const fullMenuVariants = {
 } satisfies Variants;
 
 type DialogContent =
-  | { type: 'delete'; item: ChatHistoryItem }
-  | { type: 'bulkDelete'; items: ChatHistoryItem[] }
+  | { type: "delete"; item: ChatHistoryItem }
+  | { type: "bulkDelete"; items: ChatHistoryItem[] }
   | null;
 
 function CurrentDateTime() {
@@ -93,29 +128,44 @@ function CurrentDateTime() {
       <div className="h-4 w-4 i-ph:clock opacity-80" />
       <div className="flex gap-2">
         <span>{dateTime.toLocaleDateString()}</span>
-        <span>{dateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        <span>
+          {dateTime.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
       </div>
     </div>
   );
 }
 
 interface MenuProps {
-  variant?: 'full' | 'square';
+  variant?: "full" | "square";
 }
 
-export const Menu = ({ variant = 'full' }: MenuProps) => {
+export const Menu = ({ variant = "full" }: MenuProps) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const isHacking = pathname?.startsWith('/hacking');
-  const isSource = pathname?.startsWith('/sources');
-  const isBaseRoute = ['/', '/login', '/register', '/welcome', '/org-setup', '/sources', '/hacking', '/chat', '/u', '/docs', '/workspace'].some(route =>
-    pathname === route || pathname?.startsWith(`${route}/`)
-  );
+  const isHacking = pathname?.startsWith("/hacking");
+  const isSource = pathname?.startsWith("/sources");
+  const isBaseRoute = [
+    "/",
+    "/login",
+    "/register",
+    "/welcome",
+    "/org-setup",
+    "/sources",
+    "/hacking",
+    "/chat",
+    "/u",
+    "/docs",
+    "/workspace",
+  ].some((route) => pathname === route || pathname?.startsWith(`${route}/`));
   const isOrgRoute = pathname && !isBaseRoute;
-  const currentOrgId = isOrgRoute ? pathname.split('/')[1] : null;
+  const currentOrgId = isOrgRoute ? pathname.split("/")[1] : null;
 
-  const basePath = isHacking ? '/hacking' : '/chat';
+  const basePath = isHacking ? "/hacking" : "/chat";
   const { duplicateCurrentChat, exportChat } = useChatHistory();
   const menuRef = useRef<HTMLDivElement>(null);
   const [list, setList] = useState<ChatHistoryItem[]>([]);
@@ -135,7 +185,10 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
   }, []);
 
   const visibleTabs = useMemo(() => {
-    if (!tabConfiguration?.userTabs || !Array.isArray(tabConfiguration.userTabs)) {
+    if (
+      !tabConfiguration?.userTabs ||
+      !Array.isArray(tabConfiguration.userTabs)
+    ) {
       resetTabConfiguration();
       return [];
     }
@@ -145,8 +198,8 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
     return tabConfiguration.userTabs
       .filter((tab) => {
         if (!tab?.id) return false;
-        if (tab.id === 'notifications' && notificationsDisabled) return false;
-        return tab.visible && tab.window === 'user';
+        if (tab.id === "notifications" && notificationsDisabled) return false;
+        return tab.visible && tab.window === "user";
       })
       .sort((a, b) => a.order - b.order);
   }, [tabConfiguration, profile?.preferences?.notifications, baseTabConfig]);
@@ -155,23 +208,28 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [skillsDialogOpen, setSkillsDialogOpen] = useState(false);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
-  const [newWorkspaceName, setNewWorkspaceName] = useState('');
-  const [agentSessions, setAgentSessions] = useState<Array<{ id: string; title: string }>>([]);
-  const [workspacesList, setWorkspacesList] = useState<Array<{ id: string; name: string }>>([]);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [workspacesList, setWorkspacesList] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
   const [unreadMentionsCount, setUnreadMentionsCount] = useState(0);
-
   useEffect(() => {
-    const activeWsId = pathname?.split('/')[2];
+    const activeWsId = pathname?.split("/")[2];
     if (!activeWsId) return;
 
     const checkUnread = () => {
       fetch(`/api/agent/mentions?workspaceId=${activeWsId}`)
-        .then(r => r.json())
-        .then(data => {
+        .then((r) => r.json())
+        .then((data) => {
           if (data.posts && Array.isArray(data.posts)) {
-            const lastReadStr = localStorage.getItem(`mentions_last_read_${activeWsId}`);
+            const lastReadStr = localStorage.getItem(
+              `mentions_last_read_${activeWsId}`,
+            );
             const lastRead = lastReadStr ? new Date(lastReadStr).getTime() : 0;
-            const unread = data.posts.filter((p: any) => new Date(p.createdAt || Date.now()).getTime() > lastRead).length;
+            const unread = data.posts.filter(
+              (p: any) =>
+                new Date(p.createdAt || Date.now()).getTime() > lastRead,
+            ).length;
             setUnreadMentionsCount(unread);
           }
         })
@@ -179,20 +237,25 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
     };
 
     checkUnread();
-    window.addEventListener('mentions_read_updated', checkUnread);
-    return () => window.removeEventListener('mentions_read_updated', checkUnread);
+    window.addEventListener("mentions_read_updated", checkUnread);
+    return () =>
+      window.removeEventListener("mentions_read_updated", checkUnread);
   }, [pathname]);
   const [isWorkspaceSettingsOpen, setIsWorkspaceSettingsOpen] = useState(false);
-  const [workspaceSettingsTab, setWorkspaceSettingsTab] = useState<string>('knowledge');
+  const [workspaceSettingsTab, setWorkspaceSettingsTab] =
+    useState<string>("knowledge");
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const [workspaceToRename, setWorkspaceToRename] = useState<{ id: string; name: string } | null>(null);
-  const [renameInputValue, setRenameInputValue] = useState('');
+  const [workspaceToRename, setWorkspaceToRename] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [renameInputValue, setRenameInputValue] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
 
-  const [userTier, setUserTier] = useState<string>('free');
+  const [userTier, setUserTier] = useState<string>("free");
 
   useEffect(() => {
-    fetch('/api/user/credits')
+    fetch("/api/user/credits")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d?.subscriptionTier) {
@@ -200,12 +263,14 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
         }
       })
       .catch(() => { });
-  }, [pathname]);
+  }, []);
 
   const loadWorkspaces = useCallback(() => {
     getUserWorkspaces()
       .then((data) => {
-        setWorkspacesList(data.map((w) => ({ id: w.id, name: w.name || 'Untitled Workspace' })));
+        setWorkspacesList(
+          data.map((w) => ({ id: w.id, name: w.name || "Untitled Workspace" })),
+        );
       })
       .catch(console.error);
   }, []);
@@ -220,66 +285,61 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
     setIsRenaming(true);
     try {
       await updateWorkspaceName(workspaceToRename.id, renameInputValue.trim());
-      toast.success('Workspace renamed');
+      toast.success("Workspace renamed");
       setIsRenameDialogOpen(false);
       setWorkspaceToRename(null);
       loadWorkspaces();
       router.refresh();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to rename workspace');
+      toast.error("Failed to rename workspace");
     } finally {
       setIsRenaming(false);
     }
   };
 
   const [isProductsOpen, setIsProductsOpen] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('falbor_menu_products_open') === 'true';
-  });
-
-  const [isAgentSeasonOpen, setIsAgentSeasonOpen] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('falbor_menu_agent_season_open') === 'true';
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("falbor_menu_products_open") === "true";
   });
 
   const [isAdsOpen, setIsAdsOpen] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('falbor_menu_ads_open') === 'true';
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("falbor_menu_ads_open") === "true";
   });
 
   const [isSourcesOpen, setIsSourcesOpen] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('falbor_menu_sources_open') === 'true';
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("falbor_menu_sources_open") === "true";
   });
 
   const [isContactsOpen, setIsContactsOpen] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('falbor_menu_contacts_open') === 'true';
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("falbor_menu_contacts_open") === "true";
   });
 
   const [isCommunityOpen, setIsCommunityOpen] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('falbor_menu_community_open') === 'true';
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("falbor_menu_community_open") === "true";
   });
 
   const toggleCommunityOpen = () => {
     setIsCommunityOpen((prev) => {
       const next = !prev;
-      localStorage.setItem('falbor_menu_community_open', String(next));
+      localStorage.setItem("falbor_menu_community_open", String(next));
       return next;
     });
   };
 
   const [isGamesOpen, setIsGamesOpen] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('falbor_menu_games_open') === 'true';
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("falbor_menu_games_open") === "true";
   });
 
   const toggleGamesOpen = () => {
     setIsGamesOpen((prev) => {
       const next = !prev;
-      localStorage.setItem('falbor_menu_games_open', String(next));
+      localStorage.setItem("falbor_menu_games_open", String(next));
       return next;
     });
   };
@@ -287,7 +347,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
   const toggleProductsOpen = () => {
     setIsProductsOpen((prev) => {
       const next = !prev;
-      localStorage.setItem('falbor_menu_products_open', String(next));
+      localStorage.setItem("falbor_menu_products_open", String(next));
       return next;
     });
   };
@@ -295,7 +355,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
   const toggleAdsOpen = () => {
     setIsAdsOpen((prev) => {
       const next = !prev;
-      localStorage.setItem('falbor_menu_ads_open', String(next));
+      localStorage.setItem("falbor_menu_ads_open", String(next));
       return next;
     });
   };
@@ -303,7 +363,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
   const toggleSourcesOpen = () => {
     setIsSourcesOpen((prev) => {
       const next = !prev;
-      localStorage.setItem('falbor_menu_sources_open', String(next));
+      localStorage.setItem("falbor_menu_sources_open", String(next));
       return next;
     });
   };
@@ -311,28 +371,12 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
   const toggleContactsOpen = () => {
     setIsContactsOpen((prev) => {
       const next = !prev;
-      localStorage.setItem('falbor_menu_contacts_open', String(next));
+      localStorage.setItem("falbor_menu_contacts_open", String(next));
       return next;
     });
   };
 
-  const toggleAgentSeasonOpen = () => {
-    setIsAgentSeasonOpen((prev) => {
-      const next = !prev;
-      localStorage.setItem('falbor_menu_agent_season_open', String(next));
-      return next;
-    });
-  };
-
-  const activeWsId = pathname?.split('/')[2];
-
-  useEffect(() => {
-    if (activeWsId) {
-      import('~/lib/actions/agentSession').then(({ getAgentSessionsList }) => {
-        getAgentSessionsList(activeWsId).then(setAgentSessions).catch(console.error);
-      });
-    }
-  }, [activeWsId, pathname]);
+  const activeWsId = pathname?.split("/")[2];
 
   const [isCreating, setIsCreating] = useState(false);
 
@@ -342,13 +386,13 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
     setIsCreating(true);
     try {
       const workspaceId = await createWorkspace(newWorkspaceName.trim());
-      setNewWorkspaceName('');
+      setNewWorkspaceName("");
       setIsCreatingWorkspace(false);
       loadWorkspaces();
       router.push(`/workspace/${workspaceId}`);
     } catch (error) {
       console.error(error);
-      toast.error('Failed to create workspace');
+      toast.error("Failed to create workspace");
     } finally {
       setIsCreating(false);
     }
@@ -364,7 +408,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
 
   const { filteredItems, handleSearchChange } = useSearchFilter({
     items: list,
-    searchFields: ['description'],
+    searchFields: ["description"],
   });
 
   const filteredList = filteredItems;
@@ -372,19 +416,19 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
   const deleteChat = useCallback(
     async (id: string): Promise<void> => {
       if (!db) {
-        throw new Error('Database not available');
+        throw new Error("Database not available");
       }
 
       try {
         const snapshotKey = `snapshot:${id}`;
         localStorage.removeItem(snapshotKey);
-        console.log('Removed snapshot for chat:', id);
+        console.log("Removed snapshot for chat:", id);
       } catch (snapshotError) {
         console.error(`Error deleting snapshot for chat ${id}:`, snapshotError);
       }
 
       await deleteById(db, id);
-      console.log('Successfully deleted chat:', id);
+      console.log("Successfully deleted chat:", id);
     },
     [db],
   );
@@ -394,26 +438,29 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
       event.preventDefault();
       event.stopPropagation();
 
-      console.log('Attempting to delete chat:', { id: item.id, description: item.description });
+      console.log("Attempting to delete chat:", {
+        id: item.id,
+        description: item.description,
+      });
 
       deleteChat(item.id)
         .then(() => {
-          toast.success('Chat deleted successfully', {
-            position: 'bottom-right',
+          toast.success("Chat deleted successfully", {
+            position: "bottom-right",
             autoClose: 3000,
           });
 
           loadEntries();
 
           if (chatId.get() === item.id) {
-            console.log('Navigating away from deleted chat');
-            window.location.pathname = isHacking ? '/hacking' : '/';
+            console.log("Navigating away from deleted chat");
+            window.location.pathname = isHacking ? "/hacking" : "/";
           }
         })
         .catch((error) => {
-          console.error('Failed to delete chat:', error);
-          toast.error('Failed to delete conversation', {
-            position: 'bottom-right',
+          console.error("Failed to delete chat:", error);
+          toast.error("Failed to delete conversation", {
+            position: "bottom-right",
             autoClose: 3000,
           });
 
@@ -426,11 +473,14 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
   const deleteSelectedItems = useCallback(
     async (itemsToDeleteIds: string[]) => {
       if (!db || itemsToDeleteIds.length === 0) {
-        console.log('Bulk delete skipped: No DB or no items to delete.');
+        console.log("Bulk delete skipped: No DB or no items to delete.");
         return;
       }
 
-      console.log(`Starting bulk delete for ${itemsToDeleteIds.length} chats`, itemsToDeleteIds);
+      console.log(
+        `Starting bulk delete for ${itemsToDeleteIds.length} chats`,
+        itemsToDeleteIds,
+      );
 
       let deletedCount = 0;
       const errors: string[] = [];
@@ -452,11 +502,16 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
       }
 
       if (errors.length === 0) {
-        toast.success(`${deletedCount} chat${deletedCount === 1 ? '' : 's'} deleted successfully`);
+        toast.success(
+          `${deletedCount} chat${deletedCount === 1 ? "" : "s"} deleted successfully`,
+        );
       } else {
-        toast.warning(`Deleted ${deletedCount} of ${itemsToDeleteIds.length} chats. ${errors.length} failed.`, {
-          autoClose: 5000,
-        });
+        toast.warning(
+          `Deleted ${deletedCount} of ${itemsToDeleteIds.length} chats. ${errors.length} failed.`,
+          {
+            autoClose: 5000,
+          },
+        );
       }
 
       await loadEntries();
@@ -465,8 +520,8 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
       setSelectionMode(false);
 
       if (shouldNavigate) {
-        console.log('Navigating away from deleted chat');
-        window.location.pathname = isHacking ? '/hacking' : '/';
+        console.log("Navigating away from deleted chat");
+        window.location.pathname = isHacking ? "/hacking" : "/";
       }
     },
     [deleteChat, loadEntries, db],
@@ -486,40 +541,54 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
 
   const toggleItemSelection = useCallback((id: string) => {
     setSelectedItems((prev) => {
-      const newSelectedItems = prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id];
-      console.log('Selected items updated:', newSelectedItems);
+      const newSelectedItems = prev.includes(id)
+        ? prev.filter((itemId) => itemId !== id)
+        : [...prev, id];
+      console.log("Selected items updated:", newSelectedItems);
       return newSelectedItems;
     });
   }, []);
 
   const handleBulkDeleteClick = useCallback(() => {
     if (selectedItems.length === 0) {
-      toast.info('Select at least one chat to delete');
+      toast.info("Select at least one chat to delete");
       return;
     }
 
-    const selectedChats = list.filter((item) => selectedItems.includes(item.id));
+    const selectedChats = list.filter((item) =>
+      selectedItems.includes(item.id),
+    );
 
     if (selectedChats.length === 0) {
-      toast.error('Could not find selected chats');
+      toast.error("Could not find selected chats");
       return;
     }
 
-    setDialogContent({ type: 'bulkDelete', items: selectedChats });
+    setDialogContent({ type: "bulkDelete", items: selectedChats });
   }, [selectedItems, list]);
 
   const selectAll = useCallback(() => {
     const allFilteredIds = filteredList.map((item) => item.id);
     setSelectedItems((prev) => {
-      const allFilteredAreSelected = allFilteredIds.length > 0 && allFilteredIds.every((id) => prev.includes(id));
+      const allFilteredAreSelected =
+        allFilteredIds.length > 0 &&
+        allFilteredIds.every((id) => prev.includes(id));
 
       if (allFilteredAreSelected) {
-        const newSelectedItems = prev.filter((id) => !allFilteredIds.includes(id));
-        console.log('Deselecting all filtered items. New selection:', newSelectedItems);
+        const newSelectedItems = prev.filter(
+          (id) => !allFilteredIds.includes(id),
+        );
+        console.log(
+          "Deselecting all filtered items. New selection:",
+          newSelectedItems,
+        );
         return newSelectedItems;
       } else {
         const newSelectedItems = [...new Set([...prev, ...allFilteredIds])];
-        console.log('Selecting all filtered items. New selection:', newSelectedItems);
+        console.log(
+          "Selecting all filtered items. New selection:",
+          newSelectedItems,
+        );
         return newSelectedItems;
       }
     });
@@ -531,10 +600,9 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
     }
   }, [open, loadEntries]);
 
-
   useEffect(() => {
     if (searchParams) {
-      const tab = searchParams.get('tab');
+      const tab = searchParams.get("tab");
       if (tab) {
         settingsOpenStore.set(true);
         sidebarOpen.set(true);
@@ -545,23 +613,23 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
 
   useEffect(() => {
     if (!open && selectionMode) {
-      console.log('Sidebar closed, preserving selection state');
+      console.log("Sidebar closed, preserving selection state");
     }
   }, [open, selectionMode]);
 
   const prevVariant = useRef<string | null>(null);
 
   useEffect(() => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const isWorkspaceRoute = pathname?.includes('/workspace/');
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    const isWorkspaceRoute = pathname?.includes("/workspace/");
 
-    if (variant === 'square' && prevVariant.current !== 'square') {
+    if (variant === "square" && prevVariant.current !== "square") {
       if (isMobile) {
         sidebarOpen.set(false);
       } else {
         sidebarOpen.set(true);
       }
-    } else if (variant !== 'square') {
+    } else if (variant !== "square") {
       if (isMobile) {
         sidebarOpen.set(false);
       } else if (isWorkspaceRoute) {
@@ -575,10 +643,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
     prevVariant.current = variant;
   }, [chat.started, isPinned, variant, pathname]);
 
-  useEffect(() => {
-
-
-  }, []);
+  useEffect(() => { }, []);
 
   const handleDuplicate = async (id: string) => {
     await duplicateCurrentChat(id);
@@ -597,23 +662,22 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
   const handleSettingsClose = () => {
     settingsOpenStore.set(false);
 
-
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('tab');
-      window.history.replaceState({}, '', newUrl.toString());
+      newUrl.searchParams.delete("tab");
+      window.history.replaceState({}, "", newUrl.toString());
     }
   };
 
   const setDialogContentWithLogging = useCallback((content: DialogContent) => {
-    console.log('Setting dialog content:', content);
+    console.log("Setting dialog content:", content);
     setDialogContent(content);
   }, []);
   const [connections, setConnections] = React.useState<any[]>([]);
   const selectedMCPs = useMCPStore((state) => state.selectedMCPs);
   const toggleSelectedMCP = useMCPStore((state) => state.toggleSelectedMCP);
   React.useEffect(() => {
-    fetch('/api/mcp/connections', { cache: 'no-store' })
+    fetch("/api/mcp/connections", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data && Array.isArray(data.connections)) {
@@ -624,7 +688,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
           setConnections([]);
         }
       })
-      .catch((err) => console.error('Error fetching connections', err));
+      .catch((err) => console.error("Error fetching connections", err));
   }, []);
 
   return (
@@ -638,13 +702,13 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
           <div className="i-ph:sidebar-simple w-4 h-4" />
         </button>
       )}
-      {open && variant === 'square' && (
+      {open && variant === "square" && (
         <div
           className="md:hidden fixed inset-0 bg-black/50 z-40"
           onClick={() => sidebarOpen.set(false)}
         />
       )}
-      {open && variant === 'full' && (
+      {open && variant === "full" && (
         <div
           className="md:hidden fixed inset-0 bg-black/50 z-40"
           onClick={() => sidebarOpen.set(false)}
@@ -653,37 +717,65 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
       <motion.div
         ref={menuRef}
         initial={false}
-        animate={open ? 'open' : 'closed'}
-        variants={variant === 'square' ? squareMenuVariants : fullMenuVariants}
-        style={variant === 'full' ? {} : {}}
+        animate={open ? "open" : "closed"}
+        variants={variant === "square" ? squareMenuVariants : fullMenuVariants}
+        style={variant === "full" ? {} : {}}
         className={classNames(
-          variant === 'square'
+          variant === "square"
             ? classNames(
-              'flex selection-accent flex-col side-menu h-full overflow-hidden shrink-0 border-none text-sm',
-              'absolute md:relative left-0 top-0 bottom-0 bg-[#f7f7f8] dark:bg-[#1A1A1A] md:bg-transparent shadow-xl md:shadow-none z-50 md:z-sidebar',
-              !open && 'max-md:!w-0 max-md:!opacity-0 max-md:!p-0 pointer-events-none md:pointer-events-auto'
+              "border-r border-gray-200 dark:border-[#26262b] flex selection-accent flex-col side-menu h-full overflow-hidden shrink-0 text-sm",
+              "absolute md:relative left-0 top-0 bottom-0 bg-white dark:bg-[#1A1A1A] md:bg-transparent shadow-xl md:shadow-none z-50 md:z-sidebar",
+              !open &&
+              "max-md:!w-0 max-md:!opacity-0 max-md:!p-0 pointer-events-none md:pointer-events-auto",
             )
             : classNames(
-              'flex selection-accent flex-col side-menu shrink-0 h-full bg-[#f7f7f8] dark:bg-[#1A1A1A] text-sm',
+              "border-r border-gray-200 dark:border-[#26262b] flex selection-accent flex-col side-menu shrink-0 h-full bg-white dark:bg-[#1A1A1A] text-sm",
 
-              'max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:shadow-xl',
-              !open && 'max-md:!w-0 max-md:!opacity-0 max-md:overflow-hidden max-md:pointer-events-none',
+              "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:shadow-xl",
+              !open &&
+              "max-md:!w-0 max-md:!opacity-0 max-md:overflow-hidden max-md:pointer-events-none",
 
-              'md:relative'
+              "md:relative",
             ),
-          variant === 'full' && isSettingsOpen ? 'z-40' : (variant === 'full' ? 'z-sidebar max-md:z-50' : '')
+          variant === "full" && isSettingsOpen
+            ? "z-40"
+            : variant === "full"
+              ? "z-sidebar max-md:z-50"
+              : "",
         )}
       >
-        {variant === 'square' ? (
-          <div className={classNames(
-            "h-12 flex items-center px-3 gap-2 bg-transparent transition-all",
-            open ? "justify-between" : "justify-center"
-          )}>
+        {variant === "square" ? (
+          <div
+            className={classNames(
+              "h-12 flex items-center px-3 gap-2 bg-transparent transition-all",
+              open ? "justify-between" : "justify-center",
+            )}
+          >
             {open && (
               <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
-                <a href={isHacking ? "/hacking" : "/"} className="text-xl font-semibold text-accent-500 flex items-center" onClick={(e) => e.stopPropagation()}>
-                  <img src={isHacking ? "/hacking/logo-light-styled.png" : "/hacking/logo-light-styled.png"} alt="logo" className="w-[110px] inline-block dark:hidden" />
-                  <img src={isHacking ? "/hacking/logo-dark-styled.png" : "/hacking/logo-dark-styled.png"} alt="logo" className="w-[110px] inline-block hidden dark:block" />
+                <a
+                  href={isHacking ? "/hacking" : "/"}
+                  className="text-xl font-semibold text-accent-500 flex items-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <img
+                    src={
+                      isHacking
+                        ? "/hacking/logo-light-styled.png"
+                        : "/hacking/logo-light-styled.png"
+                    }
+                    alt="logo"
+                    className="w-[110px] inline-block dark:hidden"
+                  />
+                  <img
+                    src={
+                      isHacking
+                        ? "/hacking/logo-dark-styled.png"
+                        : "/hacking/logo-dark-styled.png"
+                    }
+                    alt="logo"
+                    className="w-[110px] inline-block hidden dark:block"
+                  />
                 </a>
               </div>
             )}
@@ -704,11 +796,31 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
             </div>
           </div>
         ) : (
-          <div className="h-12 min-h-[48px] flex items-center justify-between px-3 gap-2 bg-transparent">
-            <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
-              <a href={isHacking ? "/hacking" : "/"} className="text-xl font-semibold text-accent-500 flex items-center" onClick={(e) => e.stopPropagation()}>
-                <img src={isHacking ? "/hacking/logo-light-styled.png" : "/hacking/logo-light-styled.png"} alt="logo" className="w-[110px] inline-block dark:hidden" />
-                <img src={isHacking ? "/hacking/logo-dark-styled.png" : "/hacking/logo-dark-styled.png"} alt="logo" className="w-[110px] inline-block hidden dark:block" />
+          <div className="h-13 border-b border-gray-200 dark:border-[#26262b] min-h-[48px] flex items-center justify-between px-3 gap-2 bg-transparent">
+            <div className="mb-2 flex items-center gap-2 overflow-hidden whitespace-nowrap">
+              <a
+                href={isHacking ? "/hacking" : "/"}
+                className="text-xl font-semibold text-accent-500 flex items-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img
+                  src={
+                    isHacking
+                      ? "/hacking/logo-light-styled.png"
+                      : "/hacking/logo-light-styled.png"
+                  }
+                  alt="logo"
+                  className="w-[110px] inline-block dark:hidden"
+                />
+                <img
+                  src={
+                    isHacking
+                      ? "/hacking/logo-dark-styled.png"
+                      : "/hacking/logo-dark-styled.png"
+                  }
+                  alt="logo"
+                  className="w-[110px] inline-block hidden dark:block"
+                />
               </a>
             </div>
             <div className="flex items-center gap-0.5">
@@ -724,7 +836,15 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
             </div>
           </div>
         )}
-        <div className={classNames("flex-1 flex flex-col h-full w-full overflow-hidden", variant === 'square' ? "transition-opacity duration-200" : "", variant === 'square' && !open ? "opacity-0 pointer-events-none" : "opacity-100")}>
+        <div
+          className={classNames(
+            "flex-1 flex flex-col h-full w-full overflow-hidden",
+            variant === "square" ? "transition-opacity duration-200" : "",
+            variant === "square" && !open
+              ? "opacity-0 pointer-events-none"
+              : "opacity-100",
+          )}
+        >
           {isSettingsOpen ? (
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1 modern-scrollbar">
               <div className="flex items-center justify-between mb-3 px-3">
@@ -742,7 +862,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
               {visibleTabs.map((tab) => {
                 const Icon = TAB_ICONS[tab.id as TabType];
                 const isSelected = activeSettingsTab === tab.id;
-                const isBlinking = tab.id === 'pricing' && blinkPricing;
+                const isBlinking = tab.id === "pricing" && blinkPricing;
 
                 return (
                   <button
@@ -751,20 +871,29 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                       settingsTabStore.set(tab.id as TabType);
 
                       const newUrl = new URL(window.location.href);
-                      newUrl.searchParams.set('tab', tab.id);
-                      window.history.pushState({}, '', newUrl.toString());
+                      newUrl.searchParams.set("tab", tab.id);
+                      window.history.pushState({}, "", newUrl.toString());
                     }}
                     className={classNames(
-                      'flex items-center gap-3 w-full px-3 py-1.5 rounded-md text-xs font-medium text-left transition-all relative',
+                      "flex items-center gap-3 w-full px-3 py-1.5 rounded-md text-xs font-medium text-left transition-all relative",
                       isSelected
-                        ? 'bg-gray-200/80 dark:bg-falbor-elements-background-depth-3 text-falbor-elements-textPrimary font-semibold'
-                        : 'text-falbor-elements-textSecondary hover:bg-gray-200/50 dark:hover:bg-falbor-elements-background-depth-3 hover:text-falbor-elements-textPrimary',
-                      isBlinking ? 'animate-pulse bg-blue-500/20 text-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : ''
+                        ? "bg-gray-200/80 dark:bg-falbor-elements-background-depth-3 text-falbor-elements-textPrimary font-semibold"
+                        : "text-falbor-elements-textSecondary hover:bg-gray-200/50 dark:hover:bg-falbor-elements-background-depth-3 hover:text-falbor-elements-textPrimary",
+                      isBlinking
+                        ? "animate-pulse bg-blue-500/20 text-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                        : "",
                     )}
                   >
-                    {Icon && <Icon className={classNames("w-4 h-4", isBlinking ? "text-blue-500" : "")} />}
+                    {Icon && (
+                      <Icon
+                        className={classNames(
+                          "w-4 h-4",
+                          isBlinking ? "text-blue-500" : "",
+                        )}
+                      />
+                    )}
                     <span>{TAB_LABELS[tab.id as TabType]}</span>
-                    {tab.id === 'social-connection' && (
+                    {tab.id === "social-connection" && (
                       <span className="ml-auto text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-500 dark:bg-purple-400/20 dark:text-purple-300">
                         New
                       </span>
@@ -779,7 +908,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                 <div className="px-3 py-1">
                   <button
                     onClick={() => chatSettingsOpenStore.set(true)}
-                    className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-900 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs text-gray-900 dark:text-gray-100"
+                    className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-900 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs text-gray-900 dark:text-gray-100"
                   >
                     <div className="i-ph:gear text-base text-falbor-elements-textSecondary mr-2" />
                     <span>Chat Settings</span>
@@ -789,33 +918,54 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
               {isOrgRoute ? (
                 <div className="hidden md:block">
                   <div className="flex items-center justify-between text-xs px-3 py-1.5">
-                    <div className="ml-1 text-gray-600 dark:text-gray-400 font-medium text-xs">Organization Settings</div>
+                    <div className="ml-1 text-gray-600 dark:text-gray-400 font-medium text-xs">
+                      Organization Settings
+                    </div>
                   </div>
                   <div className="flex-1 overflow-auto px-2 pb-2 space-y-0.5">
                     {[
-                      { name: 'Overview', icon: 'i-ph:squares-four', path: `/${currentOrgId}` },
-                      { name: 'Issues', icon: 'i-ph:warning-circle', path: `/${currentOrgId}/issues` },
-                      { name: 'Projects', icon: 'i-ph:folder-simple', path: `/${currentOrgId}/projects` },
-                      { name: 'Settings', icon: 'i-ph:gear', path: `/${currentOrgId}/settings` },
+                      {
+                        name: "Overview",
+                        icon: "i-ph:squares-four",
+                        path: `/${currentOrgId}`,
+                      },
+                      {
+                        name: "Issues",
+                        icon: "i-ph:warning-circle",
+                        path: `/${currentOrgId}/issues`,
+                      },
+                      {
+                        name: "Projects",
+                        icon: "i-ph:folder-simple",
+                        path: `/${currentOrgId}/projects`,
+                      },
+                      {
+                        name: "Settings",
+                        icon: "i-ph:gear",
+                        path: `/${currentOrgId}/settings`,
+                      },
                     ].map((item) => {
                       const isActive = pathname === item.path;
                       return (
-                        <Link key={item.name} href={item.path} className='relative w-full block'>
-                          <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-50">
-                            <div className={classNames(
-                              `${item.icon} w-3.5 h-3.5 mr-2 transition-colors`,
-                              isActive ? "text-purple-500" : "dark:text-white text-gray-700"
-                            )} />
-                          </div>
-                          <button
+                        <Link
+                          key={item.name}
+                          href={item.path}
+                          className={classNames(
+                            "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-900 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs mt-0.5",
+                            isActive
+                              ? "bg-[#EBEBEB] dark:bg-gray-900 text-purple-600 dark:text-purple-400 font-medium"
+                              : "text-gray-900 dark:text-gray-100",
+                          )}
+                        >
+                          <div
                             className={classNames(
-                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-900 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs mt-0.5",
-                              isActive ? "bg-[#EBEBEB] dark:bg-gray-900 text-purple-600 dark:text-purple-400 font-medium" : "text-gray-900 dark:text-gray-100"
+                              `${item.icon} w-3.5 h-3.5 mr-2 transition-colors`,
+                              isActive
+                                ? "text-purple-500"
+                                : "dark:text-white text-gray-700",
                             )}
-                          >
-                            <div className="w-3.5 h-3.5 mr-2 opacity-0" />
-                            {item.name}
-                          </button>
+                          />
+                          {item.name}
                         </Link>
                       );
                     })}
@@ -823,8 +973,10 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center justify-between text-xs px-3 py-1">
-                    <div className="font-semibold text-gray-500 dark:text-gray-400 text-xs tracking-wide">Workspace</div>
+                  <div className="mt-2 flex items-center justify-between text-xs px-3 py-1">
+                    <div className="font-semibold text-gray-500 dark:text-gray-400 text-xs tracking-wide">
+                      Workspace
+                    </div>
                   </div>
                   <div className="px-2 pb-1 space-y-1">
                     <Dropdown
@@ -844,24 +996,31 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                     >
                       <div className="max-h-40 overflow-y-auto space-y-0.5">
                         {workspacesList.length === 0 ? (
-                          <div className="px-2 py-1 text-xs text-gray-400 italic">No workspaces found</div>
+                          <div className="px-2 py-1 text-xs text-gray-400 italic">
+                            No workspaces found
+                          </div>
                         ) : (
                           workspacesList.map((ws) => {
                             const isCurrent = activeWsId === ws.id;
                             return (
                               <DropdownItem
                                 key={ws.id}
-                                onSelect={() => router.push(`/workspace/${ws.id}`)}
+                                onSelect={() =>
+                                  router.push(`/workspace/${ws.id}`)
+                                }
                                 className={classNames(
-                                  'flex items-center justify-between px-2 py-1.5 rounded-md text-xs cursor-pointer',
-                                  isCurrent && 'bg-[#0099ff]/20 text-gray-900 font-medium'
+                                  "flex items-center justify-between px-2 py-1.5 rounded-md text-xs cursor-pointer",
+                                  isCurrent &&
+                                  "bg-[#0099ff]/20 text-gray-900 font-medium",
                                 )}
                               >
                                 <div className="flex items-center gap-2 truncate">
                                   <div className="i-ph:folder w-3.5 h-3.5 text-gray-900 shrink-0" />
                                   <span className="truncate">{ws.name}</span>
                                 </div>
-                                {isCurrent && <div className="i-ph:check w-3.5 h-3.5 text-purple-500 shrink-0" />}
+                                {isCurrent && (
+                                  <div className="i-ph:check w-3.5 h-3.5 text-purple-500 shrink-0" />
+                                )}
                               </DropdownItem>
                             );
                           })
@@ -871,9 +1030,13 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                         <>
                           <DropdownItem
                             onSelect={() => {
-                              const currentWs = workspacesList.find(w => w.id === activeWsId);
-                              setWorkspaceToRename(currentWs || { id: activeWsId, name: '' });
-                              setRenameInputValue(currentWs?.name || '');
+                              const currentWs = workspacesList.find(
+                                (w) => w.id === activeWsId,
+                              );
+                              setWorkspaceToRename(
+                                currentWs || { id: activeWsId, name: "" },
+                              );
+                              setRenameInputValue(currentWs?.name || "");
                               setIsRenameDialogOpen(true);
                             }}
                             className="flex items-center gap-2 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer font-medium"
@@ -883,7 +1046,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                           </DropdownItem>
                           <DropdownItem
                             onSelect={() => {
-                              setWorkspaceSettingsTab('knowledge');
+                              setWorkspaceSettingsTab("knowledge");
                               setIsWorkspaceSettingsOpen(true);
                             }}
                             className="flex items-center gap-2 px-2 py-1.5 text-xs text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer font-medium"
@@ -892,20 +1055,27 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                             <span>Workspace Settings</span>
                           </DropdownItem>
                           {(() => {
-                            const userTier = (profile?.subscriptionTier || 'free').toLowerCase();
-                            const isPowerOrBusiness = userTier === 'power' || userTier === 'business';
+                            const userTier = (
+                              profile?.subscriptionTier || "free"
+                            ).toLowerCase();
+                            const isPowerOrBusiness =
+                              userTier === "power" || userTier === "business";
                             return (
                               <DropdownItem
                                 onSelect={() => {
                                   if (isPowerOrBusiness) {
-                                    setWorkspaceSettingsTab('members');
+                                    setWorkspaceSettingsTab("members");
                                     setIsWorkspaceSettingsOpen(true);
                                   } else {
-                                    const activeWsId = pathname?.split('/')[2];
+                                    const activeWsId = pathname?.split("/")[2];
                                     if (activeWsId) {
-                                      router.push(`/workspace/${activeWsId}/upgrade?highlight=power_business`);
+                                      router.push(
+                                        `/workspace/${activeWsId}/upgrade?highlight=power_business`,
+                                      );
                                     } else {
-                                      router.push('/upgrade?highlight=power_business');
+                                      router.push(
+                                        "/upgrade?highlight=power_business",
+                                      );
                                     }
                                   }
                                 }}
@@ -927,15 +1097,21 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                         </>
                       )}
                       {(() => {
-                        const tier = (userTier || profile?.subscriptionTier || 'free').toLowerCase() as PlanId;
-                        const planConfig = BILLING_CONFIG.plans[tier] || BILLING_CONFIG.plans.free;
+                        const tier = (
+                          userTier ||
+                          profile?.subscriptionTier ||
+                          "free"
+                        ).toLowerCase() as PlanId;
+                        const planConfig =
+                          BILLING_CONFIG.plans[tier] ||
+                          BILLING_CONFIG.plans.free;
                         const maxAllowed = planConfig.maxWorkspaces;
                         const currentWsCount = workspacesList.length;
                         const isLimitReached = currentWsCount >= maxAllowed;
 
                         const tooltipText = isLimitReached
-                          ? userTier === 'free'
-                            ? 'Paid subscription required to create more than one workspace.'
+                          ? userTier === "free"
+                            ? "Paid subscription required to create more than one workspace."
                             : `You have reached your limit of ${maxAllowed} workspaces on the ${planConfig.name} plan.`
                           : undefined;
 
@@ -943,33 +1119,42 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                           <DropdownItem
                             onSelect={() => {
                               if (isLimitReached) {
-                                toast.info(tooltipText || 'Paid subscription required to create more than 1 workspace.');
-                                const activeWsId = pathname?.split('/')[2];
+                                toast.info(
+                                  tooltipText ||
+                                  "Paid subscription required to create more than 1 workspace.",
+                                );
+                                const activeWsId = pathname?.split("/")[2];
                                 if (activeWsId) {
-                                  router.push(`/workspace/${activeWsId}/upgrade`);
+                                  router.push(
+                                    `/workspace/${activeWsId}/upgrade`,
+                                  );
                                 } else {
-                                  router.push('/upgrade');
+                                  router.push("/upgrade");
                                 }
                                 return;
                               }
-                              setNewWorkspaceName('');
+                              setNewWorkspaceName("");
                               setIsCreatingWorkspace(true);
                             }}
                             className={classNames(
                               "flex items-center justify-between px-2 py-1.5 text-xs rounded-md font-medium transition-colors",
                               isLimitReached
                                 ? "text-gray-400 dark:text-gray-500 cursor-not-allowed hover:bg-transparent"
-                                : "text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                                : "text-gray-900 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer",
                             )}
                           >
                             <div className="flex items-center gap-2 min-w-0">
                               <div className="i-ph:plus w-3.5 h-3.5 shrink-0" />
-                              <span className="truncate">Add New Workspace</span>
+                              <span className="truncate">
+                                Add New Workspace
+                              </span>
                             </div>
                             {isLimitReached && (
                               <Tooltip content={tooltipText}>
                                 <Badge className="bg-amber-500/20 text-amber-600 dark:text-amber-400 text-[10px] px-1.5 py-0.5 ml-2 font-semibold shrink-0">
-                                  {userTier === 'free' ? 'Upgrade Required' : 'Limit Reached'}
+                                  {userTier === "free"
+                                    ? "Upgrade Required"
+                                    : "Limit Reached"}
                                 </Badge>
                               </Tooltip>
                             )}
@@ -981,131 +1166,147 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                   <div className="px-2 pb-1">
                     <div className="relative w-full block">
                       {(() => {
-                        const activeWsId = pathname?.split('/')[2];
-                        const href = activeWsId ? `/workspace/${activeWsId}` : '/';
+                        const activeWsId = pathname?.split("/")[2];
+                        const href = activeWsId
+                          ? `/workspace/${activeWsId}`
+                          : "/";
                         const isHomeActive = pathname === href;
                         return (
-                          <Link href={href}>
-                            <button className={classNames(
-                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors",
-                              isHomeActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                            )}>
-                              <div className="i-ph:house w-4 h-4 mr-2" />
-                              Overview
-                            </button>
+                          <Link
+                            href={href}
+                            className={classNames(
+                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors",
+                              isHomeActive
+                                ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
+                                : "text-gray-900 dark:text-gray-100",
+                            )}
+                          >
+                            <div className="i-ph:house w-4 h-4 mr-2" />
+                            Overview
                           </Link>
                         );
                       })()}
                       {(() => {
-                        const activeWsId = pathname?.split('/')[2];
-                        const sourcesHref = activeWsId ? `/workspace/${activeWsId}/sources` : '/sources';
+                        const activeWsId = pathname?.split("/")[2];
+                        const sourcesHref = activeWsId
+                          ? `/workspace/${activeWsId}/sources`
+                          : "/sources";
                         const channelsHref = sourcesHref;
-                        const competitorsHref = activeWsId ? `/workspace/${activeWsId}/competitors` : '/competitors';
-                        const signalsHref = activeWsId ? `/workspace/${activeWsId}/signal-radar` : '/signal-radar';
-                        const mentionsHref = activeWsId ? `/workspace/${activeWsId}/mentions` : '/mentions';
-                        const isChannelsActive = pathname?.includes('/sources');
-                        const isCompetitorsActive = pathname?.includes('/competitors');
-                        const isRadarActive = pathname?.includes('/signal-radar');
-                        const isMentionsActive = pathname?.includes('/mentions');
-                        const isSourcesSectionActive = isChannelsActive || isCompetitorsActive || isRadarActive || isMentionsActive;
+                        const competitorsHref = activeWsId
+                          ? `/workspace/${activeWsId}/competitors`
+                          : "/competitors";
+                        const mentionsHref = activeWsId
+                          ? `/workspace/${activeWsId}/mentions`
+                          : "/mentions";
+                        const isChannelsActive = pathname?.includes("/sources");
+                        const isCompetitorsActive =
+                          pathname?.includes("/competitors");
+                        const isMentionsActive =
+                          pathname?.includes("/mentions");
+                        const isSourcesSectionActive =
+                          isChannelsActive ||
+                          isCompetitorsActive ||
+                          isMentionsActive;
 
                         return (
                           <div className="mt-1">
                             <button
                               onClick={toggleSourcesOpen}
                               className={classNames(
-                                "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors",
-                                isSourcesSectionActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
+                                "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors",
+                                isSourcesSectionActive
+                                  ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
+                                  : "text-gray-900 dark:text-gray-100",
                               )}
                             >
-                              <div className={classNames(
-                                "w-4 h-4 mr-2 transition-transform duration-200 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400",
-                                isSourcesOpen ? "i-ph:caret-down" : "i-ph:caret-right"
-                              )} />
+                              <div className="i-ph:newspaper w-4 h-4 mr-2" />
                               Sources
                             </button>
                             {isSourcesOpen && (
                               <div className="ml-4 pl-3 border-l border-gray-300 dark:border-gray-700 mt-1 space-y-1">
-                                <Link href={channelsHref}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
-                                    isChannelsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:hash w-3.5 h-3.5 mr-2" />
-                                    Channels
-                                  </button>
+                                <Link
+                                  href={channelsHref}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
+                                    isChannelsActive
+                                      ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
+                                      : "text-gray-900 dark:text-gray-100",
+                                  )}
+                                >
+                                  <div className="i-ph:hash w-3.5 h-3.5 mr-2" />
+                                  Channels
                                 </Link>
-                                <Link href={signalsHref}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
-                                    isRadarActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:broadcast w-3.5 h-3.5 mr-2" />
-                                    Signals
-                                  </button>
-                                </Link>
-                                <Link href={mentionsHref}>
-                                  <button className={classNames(
-                                    "flex items-center justify-between w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
-                                    isMentionsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="flex items-center">
-                                      <div className="i-ph:at w-3.5 h-3.5 mr-2" />
-                                      Mentions
-                                    </div>
-                                    {unreadMentionsCount > 0 && !isMentionsActive && (
+                                <Link
+                                  href={mentionsHref}
+                                  className={classNames(
+                                    "flex items-center justify-between w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
+                                    isMentionsActive
+                                      ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
+                                      : "text-gray-900 dark:text-gray-100",
+                                  )}
+                                >
+                                  <div className="flex items-center">
+                                    <div className="i-ph:at w-3.5 h-3.5 mr-2" />
+                                    Mentions
+                                  </div>
+                                  {unreadMentionsCount > 0 &&
+                                    !isMentionsActive && (
                                       <span className="bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                                         {unreadMentionsCount}
                                       </span>
                                     )}
-                                  </button>
                                 </Link>
-                                <Link href={competitorsHref}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
-                                    isCompetitorsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:sword w-3.5 h-3.5 mr-2" />
-                                    Competitors
-                                  </button>
+                                <Link
+                                  href={competitorsHref}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
+                                    isCompetitorsActive
+                                      ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
+                                      : "text-gray-900 dark:text-gray-100",
+                                  )}
+                                >
+                                  <div className="i-ph:sword w-3.5 h-3.5 mr-2" />
+                                  Competitors
                                 </Link>
                               </div>
                             )}
                           </div>
                         );
                       })()}
-                      {(() => {
+                      {/* {(() => {
                         const activeWsId = pathname?.split('/')[2];
                         const href = activeWsId ? `/workspace/${activeWsId}/ai-aeo` : '/ai-aeo';
                         const isAiAeoActive = pathname?.includes('/ai-aeo');
                         return (
-                          <Link href={href}>
-                            <button className={classNames(
-                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors mt-1",
+                          <Link
+                            href={href}
+                            className={classNames(
+                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1",
                               isAiAeoActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                            )}>
-                              <div className="i-ph:robot w-4 h-4 mr-2" />
-                              AEO
-                            </button>
+                            )}
+                          >
+                            <div className="i-ph:robot w-4 h-4 mr-2" />
+                            AEO
                           </Link>
                         );
-                      })()}
-                      {(() => {
+                      })()} */}
+                      {/* {(() => {
                         const activeWsId = pathname?.split('/')[2];
                         const href = activeWsId ? `/workspace/${activeWsId}/canvas` : '/canvas';
                         const isCanvasActive = pathname === href;
                         return (
-                          <Link href={href}>
-                            <button className={classNames(
-                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors mt-1",
+                          <Link
+                            href={href}
+                            className={classNames(
+                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1",
                               isCanvasActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                            )}>
-                              <div className="i-ph:brain w-4 h-4 mr-2" />
-                              Knowledge
-                            </button>
+                            )}
+                          >
+                            <div className="i-ph:brain w-4 h-4 mr-2" />
+                            Knowledge
                           </Link>
                         );
-                      })()}
+                      })()} */}
                       {(() => {
                         const activeWsId = pathname?.split('/')[2];
                         const aiProspectsHref = activeWsId ? `/workspace/${activeWsId}/agent-contact` : '/agent-contact';
@@ -1116,56 +1317,56 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                           <div className="mt-1">
                             <button
                               onClick={toggleContactsOpen}
-                              className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
+                              className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
                             >
-                              <div className={classNames(
-                                "w-4 h-4 mr-2 transition-transform duration-200 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400",
-                                isContactsOpen ? "i-ph:caret-down" : "i-ph:caret-right"
-                              )} />
+                              <div className="i-ph:users-three w-3.5 h-3.5 mr-2" />
                               Contacts
                             </button>
                             {isContactsOpen && (
                               <div className="ml-4 pl-3 border-l border-gray-300 dark:border-gray-700 mt-1 space-y-1">
-                                <Link href={aiProspectsHref}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                <Link
+                                  href={aiProspectsHref}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     isAiProspectsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:sparkle w-3.5 h-3.5 mr-2" />
-                                    Discovery
-                                  </button>
+                                  )}
+                                >
+                                  <div className="i-ph:sparkle w-3.5 h-3.5 mr-2" />
+                                  Discovery
                                 </Link>
-                                <Link href={myProspectsHref}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                <Link
+                                  href={myProspectsHref}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     isMyProspectsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:users-three w-3.5 h-3.5 mr-2" />
-                                    Leads
-                                  </button>
+                                  )}
+                                >
+                                  <div className="i-ph:users-three w-3.5 h-3.5 mr-2" />
+                                  Leads
                                 </Link>
                               </div>
                             )}
                           </div>
                         );
                       })()}
-
+                      {/* 
                       {(() => {
                         const activeWsId = pathname?.split('/')[2];
                         const href = activeWsId ? `/workspace/${activeWsId}/vibe` : '/';
                         const isVibeActive = pathname === href;
                         return (
-                          <Link href={href}>
-                            <button className={classNames(
-                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors mt-1",
+                          <Link
+                            href={href}
+                            className={classNames(
+                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1",
                               isVibeActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                            )}>
-                              <div className="i-ph:music-notes w-4 h-4 mr-2" />
-                              Studio
-                            </button>
+                            )}
+                          >
+                            <div className="i-ph:music-notes w-4 h-4 mr-2" />
+                            Studio
                           </Link>
                         );
-                      })()}
+                      })()} */}
                       {/* {(() => {
                         const activeWsId = pathname?.split('/')[2];
                         const isBusinessSubscriber = userTier === 'business';
@@ -1175,54 +1376,134 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
 
                         if (!isBusinessSubscriber) {
                           return (
-                            <Link href={upgradeHref}>
-                              <button className="flex items-center justify-between w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1 border border-[#0099ff]/70 opacity-90">
-                                <div className="flex items-center text-gray-900 dark:text-gray-100">
-                                  <div className="i-ph:trophy w-4 h-4 mr-2" />
-                                  <span>Milestone</span>
-                                </div>
-                                <Badge className="bg-[#0099ff]/20 text-[#0099ff] text-[10px] px-1.5 py-0.5 rounded-md font-semibold border border-[#0099ff]/30">
-                                  Business
-                                </Badge>
-                              </button>
+                            <Link
+                              href={upgradeHref}
+                              className="flex items-center justify-between w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1 border border-[#0099ff]/70 opacity-90"
+                            >
+                              <div className="flex items-center text-gray-900 dark:text-gray-100">
+                                <div className="i-ph:trophy w-4 h-4 mr-2" />
+                                <span>Milestone</span>
+                              </div>
+                              <Badge className="bg-[#0099ff]/20 text-[#0099ff] text-[10px] px-1.5 py-0.5 rounded-md font-semibold border border-[#0099ff]/30">
+                                Business
+                              </Badge>
                             </Link>
                           );
                         }
 
                         return (
-                          <Link href={href}>
-                            <button className={classNames(
-                              "flex items-center justify-between w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors mt-1 border border-[#0099ff]/70 shadow-sm",
+                          <Link
+                            href={href}
+                            className={classNames(
+                              "flex items-center justify-between w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1 border border-[#0099ff]/70 shadow-sm",
                               isMilestoneActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                            )}>
-                              <div className="flex items-center">
-                                <div className="i-ph:trophy w-4 h-4 mr-2" />
-                                <span>Milestone</span>
-                              </div>
-                              <Badge className="bg-[#0099ff]/20 text-[#0099ff] text-[10px] px-1.5 py-0.5 rounded-md font-semibold">
-                                Active
-                              </Badge>
-                            </button>
+                            )}
+                          >
+                            <div className="flex items-center">
+                              <div className="i-ph:trophy w-4 h-4 mr-2" />
+                              <span>Milestone</span>
+                            </div>
+                            <Badge className="bg-[#0099ff]/20 text-[#0099ff] text-[10px] px-1.5 py-0.5 rounded-md font-semibold">
+                              Active
+                            </Badge>
                           </Link>
                         );
                       })()} */}
                       {(() => {
-                        const activeWsId = pathname?.split('/')[2];
-                        const href = activeWsId ? `/workspace/${activeWsId}/agent` : '/';
+                        const activeWsId = pathname?.split("/")[2];
+                        const href = activeWsId
+                          ? `/workspace/${activeWsId}/agent`
+                          : "/";
                         const isAgentActive = pathname === href;
                         return (
-                          <Link href={href}>
-                            <button className={classNames(
-                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors mt-1",
-                              isAgentActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                            )}>
-                              <div className="i-ph:sparkle-fill w-4 h-4 mr-2 text-blue-500" />
-                              Agents
-                            </button>
+                          <Link
+                            href={href}
+                            className={classNames(
+                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1",
+                              isAgentActive
+                                ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
+                                : "text-gray-900 dark:text-gray-100",
+                            )}
+                          >
+                            <div className="i-ph:sparkle-fill w-4 h-4 mr-2 text-blue-500" />
+                            Agents
                           </Link>
                         );
                       })()}
                       {(() => {
+                        const activeWsId = pathname?.split("/")[2];
+                        const href = activeWsId
+                          ? `/workspace/${activeWsId}/product-lab`
+                          : "/";
+                        const isProductLabActive =
+                          pathname?.includes("/product-lab");
+                        return (
+                          <Link
+                            href={href}
+                            className={classNames(
+                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1",
+                              isProductLabActive
+                                ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
+                                : "text-gray-900 dark:text-gray-100",
+                            )}
+                          >
+                            <div className="i-ph:flask w-4 h-4 mr-2" />
+                            Agent Network
+                          </Link>
+                        );
+                      })()}
+                      {(() => {
+                        const activeWsId = pathname?.split("/")[2];
+                        const href = activeWsId
+                          ? `/workspace/${activeWsId}/ads-marketing`
+                          : "/";
+                        const isAdsMarketingActive =
+                          pathname?.includes("/ads-marketing");
+                        return (
+                          <Link
+                            href={href}
+                            className={classNames(
+                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1",
+                              isAdsMarketingActive
+                                ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
+                                : "text-gray-900 dark:text-gray-100",
+                            )}
+                          >
+                            <div className="i-ph:image w-4 h-4 mr-2" />
+                            Image ADs
+                          </Link>
+                        );
+                      })()}
+                      {(() => {
+                        const activeWsId = pathname?.split("/")[2];
+                        const href = activeWsId ? `/workspace/${activeWsId}/demand-capture` : "/";
+                        const active = pathname?.includes("/demand-capture");
+                        return <Link href={href} className={classNames("flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1", active ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100")}><Target className="mr-2 h-4 w-4" aria-hidden="true" />Growth Opportunities</Link>;
+                      })()}
+                      {/* {(() => {
+                        const activeWsId = pathname?.split("/")[2];
+                        const href = activeWsId ? `/workspace/${activeWsId}/feature-intelligence` : "/";
+                        const active = pathname?.includes("/feature-intelligence");
+                        return <Link href={href} className={classNames("flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1", active ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100")}><Lightbulb className="mr-2 h-4 w-4" aria-hidden="true" />Feature Intelligence</Link>;
+                      })()} */}
+                      {(() => {
+                        const activeWsId = pathname?.split('/')[2];
+                        const href = activeWsId ? `/workspace/${activeWsId}/automation` : '/';
+                        const isAutomationActive = pathname?.includes('/automation');
+                        return (
+                          <Link
+                            href={href}
+                            className={classNames(
+                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1",
+                              isAutomationActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
+                            )}
+                          >
+                            <div className="i-ph:robot w-4 h-4 mr-2" />
+                            Reddit Automation <Badge className="ml-2 !rounded-md bg-[#0099ff]/20 text-[#0099ff]">Beta</Badge>
+                          </Link>
+                        );
+                      })()}
+                      {/* {(() => {
                         const activeWsId = pathname?.split('/')[2];
                         const budgetHref = activeWsId ? `/workspace/${activeWsId}/budget` : '/';
                         const adsMarketingHref = activeWsId ? `/workspace/${activeWsId}/ads-marketing` : '/';
@@ -1232,7 +1513,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                           <div className="mt-1">
                             <button
                               onClick={toggleAdsOpen}
-                              className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
+                              className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
                             >
                               <div className={classNames(
                                 "w-4 h-4 mr-2 transition-transform duration-200 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400",
@@ -1242,65 +1523,61 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                             </button>
                             {isAdsOpen && (
                               <div className="ml-4 pl-3 border-l border-gray-300 dark:border-gray-700 mt-1 space-y-1">
-                                <Link href={budgetHref}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                <Link
+                                  href={budgetHref}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     isBudgetActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:currency-circle-dollar w-3.5 h-3.5 mr-2" />
-                                    Budget
-                                  </button>
+                                  )}
+                                >
+                                  <div className="i-ph:currency-circle-dollar w-3.5 h-3.5 mr-2" />
+                                  Budget
                                 </Link>
-                                <Link href={adsMarketingHref}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
-                                    isAdsMarketingActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:chart-line-up w-3.5 h-3.5 mr-2" />
-                                    Campaigns
-                                  </button>
-                                </Link>
-                                <Link href={activeWsId ? `/workspace/${activeWsId}/blog-content` : '/'}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                <Link
+                                  href={activeWsId ? `/workspace/${activeWsId}/blog-content` : '/'}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     pathname?.includes('/blog-content') ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:article-duotone w-3.5 h-3.5 mr-2" />
-                                    Content
-                                  </button>
+                                  )}
+                                >
+                                  <div className="i-ph:article-duotone w-3.5 h-3.5 mr-2" />
+                                  Content
                                 </Link>
-                                <Link href={activeWsId ? `/workspace/${activeWsId}/product-deck` : '/'}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                <Link
+                                  href={activeWsId ? `/workspace/${activeWsId}/product-deck` : '/'}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     pathname?.includes('/product-deck') ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:presentation-chart-duotone w-3.5 h-3.5 mr-2" />
-                                    Pitch <Badge className='bg-[#0099ff]/20 text-[#0099ff] ml-1 rounded-md'>Beta</Badge>
-                                  </button>
+                                  )}
+                                >
+                                  <div className="i-ph:presentation-chart-duotone w-3.5 h-3.5 mr-2" />
+                                  Pitch <Badge className='bg-[#0099ff]/20 text-[#0099ff] ml-1 rounded-md'>Beta</Badge>
                                 </Link>
-                                {/* <Link href={activeWsId ? `/workspace/${activeWsId}/google-ads` : '/'}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                <Link
+                                  href={activeWsId ? `/workspace/${activeWsId}/google-ads` : '/'}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     pathname?.includes('/google-ads') ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )} disabled>
-                                    <img src="/icons/google.svg" alt="" className='w-3.5 h-3.5 mr-2' />
-                                    Google Ads <Badge>Coming Soon</Badge>
-                                  </button>
-                                </Link> */}
-                                <Link href={activeWsId ? `/workspace/${activeWsId}/meta-ads` : '/'}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                  )}
+                                >
+                                  <img src="/icons/google.svg" alt="" className='w-3.5 h-3.5 mr-2' />
+                                  Google Ads <Badge>Coming Soon</Badge>
+                                </Link>
+                                <Link
+                                  href={activeWsId ? `/workspace/${activeWsId}/meta-ads` : '/'}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     pathname?.includes('/meta-ads') ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <img src="/icons/meta.svg" alt="" className='w-4 h-3.5 mr-2' />
-                                    Meta Ads
-                                  </button>
+                                  )}
+                                >
+                                  <img src="/icons/meta.svg" alt="" className='w-4 h-3.5 mr-2' />
+                                  Meta Ads
                                 </Link>
                               </div>
                             )}
                           </div>
                         );
-                      })()}
+                      })()} */}
                       {/* {(() => {
                         const activeWsId = pathname?.split('/')[2];
                         const href = activeWsId ? `/workspace/${activeWsId}/product` : '/workspace';
@@ -1309,7 +1586,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                           <div className="mt-1">
                             <button
                               onClick={toggleProductsOpen}
-                              className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
+                              className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
                             >
                               <div className={classNames(
                                 "w-4 h-4 mr-2 transition-transform duration-200 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400",
@@ -1320,14 +1597,15 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                             </button>
                             {isProductsOpen && (
                               <div className="ml-4 pl-3 border-l border-gray-300 dark:border-gray-700 mt-1 space-y-1">
-                                <Link href={href}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                <Link
+                                  href={href}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     isProductsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:trend-up w-3.5 h-3.5 mr-2" />
-                                    Trends
-                                  </button>
+                                  )}
+                                >
+                                  <div className="i-ph:trend-up w-3.5 h-3.5 mr-2" />
+                                  Trends
                                 </Link>
                               </div>
                             )}
@@ -1343,7 +1621,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                           <div className="mt-1">
                             <button
                               onClick={toggleCommunityOpen}
-                              className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
+                              className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
                             >
                               <div className={classNames(
                                 "w-4 h-4 mr-2 transition-transform duration-200 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400",
@@ -1354,24 +1632,27 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                             </button>
                             {isCommunityOpen && (
                               <div className="ml-4 pl-3 border-l border-gray-300 dark:border-gray-700 mt-1 space-y-1">
-                                <Link href="/marketers" target="_blank">
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                <Link
+                                  href="/marketers"
+                                  target="_blank"
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     isMarketersActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:user-list w-3.5 h-3.5 mr-2" />
-                                    Marketers
-                                    <div className="i-ph:arrow-square-out w-4 h-4 ml-auto" />
-                                  </button>
+                                  )}
+                                >
+                                  <div className="i-ph:user-list w-3.5 h-3.5 mr-2" />
+                                  Marketers
+                                  <div className="i-ph:arrow-square-out w-4 h-4 ml-auto" />
                                 </Link>
-                                <Link href={messagesHref}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                <Link
+                                  href={messagesHref}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     isMessagesActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:chat-teardrop-dots w-3.5 h-3.5 mr-2" />
-                                    Messages
-                                  </button>
+                                  )}
+                                >
+                                  <div className="i-ph:chat-teardrop-dots w-3.5 h-3.5 mr-2" />
+                                  Messages
                                 </Link>
                               </div>
                             )}
@@ -1386,7 +1667,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                           <div className="mt-1">
                             <button
                               onClick={toggleGamesOpen}
-                              className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
+                              className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
                             >
                               <div className={classNames(
                                 "w-4 h-4 mr-2 transition-transform duration-200 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400",
@@ -1397,14 +1678,15 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                             </button>
                             {isGamesOpen && (
                               <div className="ml-4 pl-3 border-l border-gray-300 dark:border-gray-700 mt-1 space-y-1">
-                                <Link href={arenaHref}>
-                                  <button className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500/50 text-xs font-medium transition-colors",
+                                <Link
+                                  href={arenaHref}
+                                  className={classNames(
+                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     isArenaActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
-                                  )}>
-                                    <div className="i-ph:sword w-3.5 h-3.5 mr-2 text-purple-600" />
-                                    Arena
-                                  </button>
+                                  )}
+                                >
+                                  <div className="i-ph:sword w-3.5 h-3.5 mr-2 text-purple-600" />
+                                  Arena
                                 </Link>
                               </div>
                             )}
@@ -1414,14 +1696,15 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                     </div>
                   </div>
                   {(() => {
-                    const isPricingActive = searchParams?.get('tab') === 'pricing';
+                    const isPricingActive =
+                      searchParams?.get("tab") === "pricing";
                     const handlePricingClick = (e: React.MouseEvent) => {
                       e.preventDefault();
-                      const activeWsId = pathname?.split('/')[2];
+                      const activeWsId = pathname?.split("/")[2];
                       if (activeWsId) {
                         router.push(`/workspace/${activeWsId}/upgrade`);
                       } else {
-                        router.push('/upgrade');
+                        router.push("/upgrade");
                       }
                     };
 
@@ -1429,7 +1712,10 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                       aiSidebarStore.isOpen.set(true);
                     };
 
-                    const isTopTier = profile?.subscriptionTier === 'pro' || profile?.subscriptionTier === 'enterprise' || profile?.subscriptionTier === 'highest';
+                    const isTopTier =
+                      profile?.subscriptionTier === "pro" ||
+                      profile?.subscriptionTier === "enterprise" ||
+                      profile?.subscriptionTier === "highest";
 
                     return (
                       <div className="p-3 mt-auto space-y-2">
@@ -1444,8 +1730,12 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                             <div className="flex items-center gap-2.5 min-w-0">
                               <div className="i-ph:sparkle-fill w-5 h-5 dark:text-white/90 shrink-0" />
                               <div className="flex flex-col text-left leading-tight min-w-0">
-                                <span className="text-xs truncate">Return to the Agent</span>
-                                <span className="text-[10px] dark:text-white/90 font-normal">AI Agent</span>
+                                <span className="text-xs truncate">
+                                  Return to the Agent
+                                </span>
+                                <span className="text-[10px] dark:text-white/90 font-normal">
+                                  AI Agent
+                                </span>
                               </div>
                             </div>
                             <div className="i-ph:arrow-right w-4 h-4 shrink-0 ml-1" />
@@ -1455,10 +1745,10 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                           <Button
                             onClick={handlePricingClick}
                             className={classNames(
-                              "flex items-center justify-center w-full px-3 py-2 rounded-lg font-medium text-sm text-black transition-opacity hover:opacity-90 focus:outline-none focus:ring-1 focus:ring-amber-500/50",
-                              isPricingActive ? "opacity-90" : ""
+                              "flex items-center justify-center w-full px-3 py-2 rounded-lg font-medium text-sm text-black transition-opacity hover:opacity-90 focus:outline-none",
+                              isPricingActive ? "opacity-90" : "",
                             )}
-                            style={{ backgroundColor: '#ffc64cff' }}
+                            style={{ backgroundColor: "#ffc64cff" }}
                           >
                             <div className="i-ph:diamond w-4 h-4 mr-2 text-black shrink-0" />
                             Upgrade Plan
@@ -1475,7 +1765,10 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
       </motion.div>
 
       <DialogRoot open={isRenameDialogOpen}>
-        <Dialog onClose={() => setIsRenameDialogOpen(false)} onBackdrop={() => setIsRenameDialogOpen(false)}>
+        <Dialog
+          onClose={() => setIsRenameDialogOpen(false)}
+          onBackdrop={() => setIsRenameDialogOpen(false)}
+        >
           <form onSubmit={handleRenameWorkspace} className="p-6 space-y-4">
             <DialogTitle>Rename Workspace</DialogTitle>
             <DialogDescription>
@@ -1489,9 +1782,7 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
               placeholder="Workspace Name"
             />
             <div className="flex justify-end gap-2 pt-2">
-              <Button
-                onClick={() => setIsRenameDialogOpen(false)}
-              >
+              <Button onClick={() => setIsRenameDialogOpen(false)}>
                 Cancel
               </Button>
               <Button
@@ -1499,9 +1790,9 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                   handleRenameWorkspace(e);
                 }}
                 disabled={isRenaming || !renameInputValue.trim()}
-                className='bg-[#0099ff]/20 text-[#0099ff]'
+                className="bg-[#0099ff]/20 text-[#0099ff]"
               >
-                {isRenaming ? 'Saving...' : 'Save Name'}
+                {isRenaming ? "Saving..." : "Save Name"}
               </Button>
             </div>
           </form>
@@ -1509,7 +1800,10 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
       </DialogRoot>
 
       <DialogRoot open={isCreatingWorkspace}>
-        <Dialog onClose={() => setIsCreatingWorkspace(false)} onBackdrop={() => setIsCreatingWorkspace(false)}>
+        <Dialog
+          onClose={() => setIsCreatingWorkspace(false)}
+          onBackdrop={() => setIsCreatingWorkspace(false)}
+        >
           <form onSubmit={handleCreateWorkspace} className="p-6 space-y-4">
             <DialogTitle>Create Workspace</DialogTitle>
             <DialogDescription>
@@ -1534,9 +1828,9 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
                   handleCreateWorkspace(e);
                 }}
                 disabled={isCreating || !newWorkspaceName.trim()}
-                className='bg-[#0099ff]/20 text-[#0099ff]'
+                className="bg-[#0099ff]/20 text-[#0099ff]"
               >
-                {isCreating ? 'Creating...' : 'Create Workspace'}
+                {isCreating ? "Creating..." : "Create Workspace"}
               </Button>
             </div>
           </form>
@@ -1552,7 +1846,10 @@ export const Menu = ({ variant = 'full' }: MenuProps) => {
         />
       )}
 
-      <SkillsDialog open={skillsDialogOpen} onOpenChange={setSkillsDialogOpen} />
+      <SkillsDialog
+        open={skillsDialogOpen}
+        onOpenChange={setSkillsDialogOpen}
+      />
     </>
   );
 };

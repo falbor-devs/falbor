@@ -2,6 +2,7 @@ import Page from '../../page';
 import { getWorkspaceById, getLastUsedWorkspace } from '~/lib/actions/workspaces';
 import { WorkspaceOnboardingModal } from '~/components/workspace/workspace-onboarding/WorkspaceOnboardingModal';
 import { redirect } from 'next/navigation';
+import { NewBusinessConceptPanel } from '~/components/workspace/NewBusinessConceptPanel';
 
 export default async function WorkspacePage({ params }: { params: { id: string } }) {
   const workspace = await getWorkspaceById(params.id);
@@ -20,6 +21,7 @@ export default async function WorkspacePage({ params }: { params: { id: string }
     <>
       <Page />
       {showOnboarding && <WorkspaceOnboardingModal workspaceId={params.id} />}
+      {workspace.businessMode === 'new' && <NewBusinessConceptPanel workspaceId={params.id} status={workspace.businessConceptStatus} concept={workspace.businessConcept} />}
     </>
   );
 }

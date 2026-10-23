@@ -3,7 +3,7 @@ export interface AgentTask {
   agentId: string;
   title: string;
   description?: string;
-  status: 'todo' | 'in_progress' | 'finished';
+  status: 'queued' | 'running' | 'blocked' | 'completed' | 'failed' | 'cancelled';
   requestor: string;
   createdAt: string;
   resultTitle?: string;

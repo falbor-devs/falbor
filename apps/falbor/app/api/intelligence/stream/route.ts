@@ -33,37 +33,88 @@ export async function POST(req: Request) {
 
     TASK: Produce a full Product Intelligence report for this workspace.
     - Think out loud briefly about your plan and hypotheses as normal text.
-    - Use 'read_knowledge' with diverse, specific focus areas (pain points, pricing model, technical stack, ICP traits).
-    - Use 'search_competitors' with unique, specific queries targeting niche competitors, alternatives and market dynamics.
+    - Use 'read_knowledge' FIRST with diverse focus areas (pain points, pricing model, technical stack, ICP traits) — it returns the ACTUAL workspace knowledge. Ground every conclusion in what it returns.
+    - Use 'search_competitors' with 3-6 specific, non-generic queries scoped to this exact category and audience (e.g. "alternatives to X for Y", "best Z tools for {audience}", "{category} vs {category}"). The tool returns real search results; base competitor names ONLY on what appears in those results.
     - You MUST finish by calling 'submit_intelligence' exactly once with the complete structured output matching the schema. The task is not complete until you do.
+
+    COMPETITOR DOCTRINE (critical):
+    - A DIRECT competitor solves the SAME core problem for the SAME primary audience in the SAME way/category (same job-to-be-done). A FUNCTIONAL competitor solves the same core problem with a different approach. Everything else is NOT a competitor.
+    - The fact that a product is "AI-powered" does NOT make it a competitor. Judge by job-to-be-done overlap and audience overlap, never by tech adjacency. A general-purpose AI chatbot, LLM, or a website that merely uses AI is NOT a competitor unless it performs this product's exact job.
+    - Every competitor you submit MUST be supported by evidence you actually saw: a search result title/url/snippet or the workspace knowledge showing it offers this job for this audience. If nothing supports a competitor, do not list it. An empty or short list of true competitors beats a padded list.
+    - Never invent competitor names, and never copy the user's own product as a competitor of itself.
+
+    TRUTH RULES:
+    - NEVER hallucinate traction, users, revenue, pricing, funding, or market data.
+    - If something is not evidenced by workspace knowledge or search results, mark it clearly as an assumption or omit it.
 
     ${UI_PROMPT}`,
     tools: {
       ...uiTools,
       read_knowledge: tool({
-        description: 'Read and extract key product positioning from the workspace knowledge.',
+        description: 'Read the real workspace knowledge (product context, positioning, prior intelligence). Returns the actual content to ground your analysis.',
         parameters: z.object({
           focusAreas: z.array(z.string()).describe('The areas you want to extract, e.g. "Pain points", "Target audience"'),
         }),
         execute: async ({ focusAreas }) => {
-          return { status: 'success', extracted: `Extracted data for: ${focusAreas.join(', ')}` };
+          return {
+            status: 'success',
+            extractionFocus: focusAreas,
+            workspace: {
+              name: workspace.name,
+              contextPrompt: context,
+              existingIntelligence: workspace.intelligenceData || null,
+            },
+            guidance: 'Ground every section of the report in this knowledge. Anything not supported by the knowledge or your search results must be marked as an assumption or omitted.',
+          };
         },
       }),
       search_competitors: tool({
-        description: 'Search the web for competitors in the market based on the product description.',
+        description: 'Search the real web (SerpApi) for competitors, alternatives and market dynamics. Returns real search results per query.',
         parameters: z.object({
           queries: z.array(z.string()).describe('List of search queries, e.g. "email marketing tools for creators"'),
         }),
         execute: async ({ queries }) => {
-          const foundLinks = queries.map((q) => {
-            const domain = q.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
-            return {
-              title: `${q} - Market Analysis`,
-              url: `https://www.google.com/search?q=${encodeURIComponent(q)}`,
-              favicon: `https://www.google.com/s2/favicons?domain=${domain}.com&sz=64`,
-            };
-          });
-          return { status: 'success', foundLinks };
+          const apiKey = process.env.SERPAPI_KEY;
+          if (!apiKey) {
+            return { status: 'error', error: 'SERPAPI_KEY not configured', results: {}, foundLinks: [] };
+          }
+          const results: Record<string, Array<{ title: string; url: string; snippet: string; source: string }>> = {};
+          for (const query of queries.slice(0, 6)) {
+            try {
+              const url = new URL('https://serpapi.com/search');
+              url.searchParams.set('q', query);
+              url.searchParams.set('api_key', apiKey);
+              url.searchParams.set('num', '8');
+              url.searchParams.set('hl', 'en');
+              const res = await fetch(url.toString());
+              if (!res.ok) continue;
+              const data = await res.json();
+              results[query] = (data.organic_results || []).slice(0, 8).map((r: any) => ({
+                title: r.title || '',
+                url: r.link || '',
+                snippet: r.snippet || '',
+                source: r.displayed_link || '',
+              }));
+            } catch {
+              continue;
+            }
+          }
+          const foundLinks = Object.values(results)
+            .flat()
+            .filter((r) => r.url)
+            .slice(0, 12)
+            .map((r) => {
+              try {
+                return {
+                  title: r.title,
+                  url: r.url,
+                  favicon: `https://www.google.com/s2/favicons?domain=${new URL(r.url).hostname}&sz=64`,
+                };
+              } catch {
+                return { title: r.title, url: r.url, favicon: '' };
+              }
+            });
+          return { status: 'success', results, foundLinks };
         },
       }),
       submit_intelligence: tool({

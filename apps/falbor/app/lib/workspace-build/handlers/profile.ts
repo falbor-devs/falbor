@@ -124,7 +124,12 @@ export const understandMarket: StageHandler = async ({ workspaceId }) => {
 
   const market = await orchestrate(
     marketSchema,
-    `Describe the market this product competes in. Only name competitors you are confident really exist.
+    `Describe the market this product competes in.
+
+COMPETITOR RULES (critical):
+- A DIRECT competitor solves the same core problem for the same primary audience in the same way/job-to-be-done. A FUNCTIONAL competitor solves the same core problem with a different approach.
+- A product is NOT a competitor merely because it "uses AI", is AI-adjacent, or is a general-purpose AI tool — judge ONLY by job-to-be-done and audience overlap with this product's exact function.
+- Only name competitors you are confident really exist, are truly relevant, and belong to this market. Prefer a shorter, accurate list over a padded one.
 
 Product: ${profile.productName}
 Summary: ${profile.summary}

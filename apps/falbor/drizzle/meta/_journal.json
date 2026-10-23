@@ -8,6 +8,97 @@
       "when": 1787469332008,
       "tag": "0000_watery_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792429993903,
+      "tag": "0001_agent-runtime",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792430111467,
+      "tag": "0002_agent-orchestration",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792588573000,
+      "tag": "0003_workspace_business_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792589000000,
+      "tag": "0004_product_lab",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792590000000,
+      "tag": "0005_product_lab_reliability",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792591000000,
+      "tag": "0006_product_lab_agent_positions",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792592000000,
+      "tag": "0007_product_lab_experiments",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792593000000,
+      "tag": "0008_demand_capture_feature_intelligence",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792679400000,
+      "tag": "0009_demand_capture_validation",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792765800000,
+      "tag": "0010_growth_opportunities",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792852200000,
+      "tag": "0011_ad_playgrounds",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792938600000,
+      "tag": "0012_ad_playground_assets",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793025000000,
+      "tag": "0013_ad_services_brand_dna",
+      "breakpoints": true
     }
   ]
 }

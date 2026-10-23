@@ -17,7 +17,7 @@ export type MyProspect = {
     source: string | null;
     sourceProvider: string | null;
     externalId: string | null;
-    status: string;
+    status: ProspectStatus;
     notes: string | null;
     linkedAiProspectId: string | null;
     createdAt: Date;

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { aiSidebarStore } from '~/lib/stores/aiSidebar';
 import { getAgentIcon, type AgentTask } from './types';
 
 interface AgentWorkspaceContentProps {
@@ -11,6 +10,9 @@ interface AgentWorkspaceContentProps {
   finishedTasks: AgentTask[];
   onOpenAssign: () => void;
   onReviewTask: (task: AgentTask) => void;
+  onViewAgent: () => Promise<void>;
+  onStopTask: (taskId: string) => Promise<void>;
+  stoppingTaskId: string | null;
   agentIndex?: number;
 }
 
@@ -21,6 +23,9 @@ export function AgentWorkspaceContent({
   finishedTasks,
   onOpenAssign,
   onReviewTask,
+  onViewAgent,
+  onStopTask,
+  stoppingTaskId,
   agentIndex = 0,
 }: AgentWorkspaceContentProps) {
   return (
@@ -108,12 +113,21 @@ export function AgentWorkspaceContent({
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => aiSidebarStore.open()}
-                      className="px-2.5 py-1 text-xs rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-[#2a2a32] dark:hover:bg-[#34343e] text-gray-700 dark:text-gray-200 transition-colors shrink-0"
-                    >
-                      View Agent
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => void onViewAgent()}
+                        className="px-2.5 py-1 text-xs rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-[#2a2a32] dark:hover:bg-[#34343e] text-gray-700 dark:text-gray-200 transition-colors"
+                      >
+                        View Agent
+                      </button>
+                      <button
+                        onClick={() => void onStopTask(task.id)}
+                        disabled={stoppingTaskId === task.id}
+                        className="px-2.5 py-1 text-xs rounded-md bg-red-100 hover:bg-red-200 dark:bg-red-500/15 dark:hover:bg-red-500/25 text-red-700 dark:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {stoppingTaskId === task.id ? 'Stopping...' : 'Stop'}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

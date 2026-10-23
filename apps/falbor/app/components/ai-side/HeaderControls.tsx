@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   IoAdd,
   IoTrashOutline,
@@ -13,9 +13,9 @@ import {
   IoLinkOutline,
   IoSettingsOutline,
   IoPersonCircleOutline,
-} from 'react-icons/io5';
-import { aiSidebarStore } from '~/lib/stores/aiSidebar';
-import { WorkspaceSettingsModal } from '~/components/workspace/workspace-settings/WorkspaceSettingsModal';
+} from "react-icons/io5";
+import { aiSidebarStore } from "~/lib/stores/aiSidebar";
+import { WorkspaceSettingsModal } from "~/components/workspace/workspace-settings/WorkspaceSettingsModal";
 import {
   Dropdown,
   DropdownItem,
@@ -23,11 +23,11 @@ import {
   DropdownSub,
   DropdownSubTrigger,
   DropdownSubContent,
-} from '~/components/ui/Dropdown';
-import { TelegramConnectModal } from './TelegramConnectModal';
-import { Badge } from '../ui';
-import { useAgentSessions } from './hooks/useAgentSessions';
-import { useAgentSelection } from './hooks/useAgentSelection';
+} from "~/components/ui/Dropdown";
+import { TelegramConnectModal } from "./TelegramConnectModal";
+import { Badge } from "../ui";
+import { useAgentSessions } from "./hooks/useAgentSessions";
+import { useAgentSelection } from "./hooks/useAgentSelection";
 
 export const HeaderControls = () => {
   const {
@@ -49,12 +49,12 @@ export const HeaderControls = () => {
   );
 
   const [isEditing, setIsEditing] = useState(false);
-  const [titleInput, setTitleInput] = useState('');
+  const [titleInput, setTitleInput] = useState("");
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleStartRename = () => {
-    setTitleInput(currentSessionTitle || 'Onboarding');
+    setTitleInput(currentSessionTitle || "Onboarding");
     setIsEditing(true);
   };
 
@@ -65,7 +65,7 @@ export const HeaderControls = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between p-3 rounded-md border-b border-gray-200/50 dark:border-gray-800/50">
+      <div className="flex h-13 shrink-0 items-center justify-between border-b border-gray-200 px-4 py-2 dark:border-gray-800/50">
         <div className="flex items-center gap-2 overflow-hidden flex-1 mr-2 min-w-0">
           <button
             onClick={handleStartRename}
@@ -73,7 +73,11 @@ export const HeaderControls = () => {
             title="Click to rename session"
           >
             {currentAgent?.avatarUrl ? (
-              <img src={currentAgent.avatarUrl} alt="Agent" className="w-5 h-5 rounded-full object-cover shrink-0" />
+              <img
+                src={currentAgent.avatarUrl}
+                alt="Agent"
+                className="w-5 h-5 rounded-full object-cover shrink-0"
+              />
             ) : (
               <IoSparkles className="text-blue-500 text-xl shrink-0" />
             )}
@@ -83,8 +87,8 @@ export const HeaderControls = () => {
                 value={titleInput}
                 onChange={(e) => setTitleInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') onSaveRename();
-                  if (e.key === 'Escape') setIsEditing(false);
+                  if (e.key === "Enter") onSaveRename();
+                  if (e.key === "Escape") setIsEditing(false);
                 }}
                 onBlur={onSaveRename}
                 autoFocus
@@ -92,7 +96,7 @@ export const HeaderControls = () => {
               />
             ) : (
               <span className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                {currentSessionTitle || 'Onboarding'}
+                {currentSessionTitle || "Onboarding"}
               </span>
             )}
           </button>
@@ -120,8 +124,12 @@ export const HeaderControls = () => {
                   active={!currentAgent}
                   onSelect={() => handleSelectAgent(null)}
                 >
-                  {!currentAgent && <IoCheckmark className="text-sm text-blue-500 shrink-0" />}
-                  <span className="truncate flex-1">Felbor Agent (Template)</span>
+                  {!currentAgent && (
+                    <IoCheckmark className="text-sm text-blue-500 shrink-0" />
+                  )}
+                  <span className="truncate flex-1">
+                    Felbor Agent (Template)
+                  </span>
                 </DropdownItem>
                 {agents.length > 0 && <DropdownSeparator />}
                 {agents.map((agent) => (
@@ -130,7 +138,9 @@ export const HeaderControls = () => {
                     active={currentAgent?.id === agent.id}
                     onSelect={() => handleSelectAgent(agent)}
                   >
-                    {currentAgent?.id === agent.id && <IoCheckmark className="text-sm text-blue-500 shrink-0" />}
+                    {currentAgent?.id === agent.id && (
+                      <IoCheckmark className="text-sm text-blue-500 shrink-0" />
+                    )}
                     <span className="truncate flex-1">{agent.name}</span>
                   </DropdownItem>
                 ))}
@@ -151,7 +161,9 @@ export const HeaderControls = () => {
                 <DropdownSeparator />
                 {sessions.length === 0 ? (
                   <DropdownItem active className="font-medium">
-                    <span className="truncate">{currentSessionTitle || 'Current Chat'}</span>
+                    <span className="truncate">
+                      {currentSessionTitle || "Current Chat"}
+                    </span>
                   </DropdownItem>
                 ) : (
                   sessions.map((s) => (
@@ -160,7 +172,9 @@ export const HeaderControls = () => {
                       active={s.id === currentSessionId}
                       onSelect={() => handleSelectSession(s.id, s.title)}
                     >
-                      {s.id === currentSessionId && <IoCheckmark className="text-sm text-blue-500 shrink-0" />}
+                      {s.id === currentSessionId && (
+                        <IoCheckmark className="text-sm text-blue-500 shrink-0" />
+                      )}
                       <span className="truncate flex-1">{s.title}</span>
                     </DropdownItem>
                   ))
@@ -175,24 +189,45 @@ export const HeaderControls = () => {
               </DropdownSubTrigger>
               <DropdownSubContent>
                 <DropdownItem onSelect={() => setIsTelegramModalOpen(true)}>
-                  <img className='shrink-0 w-5 h-5' src="/icons/connectors/telegram_agent.svg" alt="" />
+                  <img
+                    className="shrink-0 w-5 h-5"
+                    src="/icons/connectors/telegram_agent.svg"
+                    alt=""
+                  />
                   <span className="font-medium">Telegram</span>
                 </DropdownItem>
-                <DropdownItem className="opacity-50 cursor-not-allowed" onSelect={(e) => e.preventDefault()}>
-                  <img className='shrink-0 w-5 h-5' src="/icons/connectors/whatsapp.svg" alt="" />
-                  <span className="text-gray-400">WhatsApp <Badge variant="secondary">Soon</Badge></span>
+                <DropdownItem
+                  className="opacity-50 cursor-not-allowed"
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  <img
+                    className="shrink-0 w-5 h-5"
+                    src="/icons/connectors/whatsapp.svg"
+                    alt=""
+                  />
+                  <span className="text-gray-400">
+                    WhatsApp <Badge variant="secondary">Soon</Badge>
+                  </span>
                 </DropdownItem>
               </DropdownSubContent>
             </DropdownSub>
 
             <DropdownItem asChild>
-              <a href={`/workspace/${workspaceId}/agent/${currentSessionId || 'default'}`}>
+              <a
+                href={`/workspace/${workspaceId}/agent/${currentSessionId || "default"}`}
+              >
                 <IoExpandOutline className="text-base text-gray-500 dark:text-gray-400 shrink-0" />
                 <span>Full Screen</span>
               </a>
             </DropdownItem>
 
-            <DropdownItem onSelect={() => aiSidebarStore.isBrowserOpen.set(!aiSidebarStore.isBrowserOpen.get())}>
+            <DropdownItem
+              onSelect={() =>
+                aiSidebarStore.isBrowserOpen.set(
+                  !aiSidebarStore.isBrowserOpen.get(),
+                )
+              }
+            >
               <i className="i-ph:globe-duotone text-base text-gray-500 dark:text-gray-400 shrink-0" />
               <span>Browser View</span>
             </DropdownItem>
@@ -224,7 +259,7 @@ export const HeaderControls = () => {
         isOpen={isTelegramModalOpen}
         onClose={() => setIsTelegramModalOpen(false)}
         sessionId={currentSessionId}
-        sessionTitle={currentSessionTitle || 'Onboarding'}
+        sessionTitle={currentSessionTitle || "Onboarding"}
       />
 
       {workspaceId && (

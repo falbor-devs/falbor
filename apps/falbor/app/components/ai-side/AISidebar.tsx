@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import classNames from 'classnames';
-import { useStore } from '@nanostores/react';
-import { aiSidebarStore } from '~/lib/stores/aiSidebar';
-import { HeaderControls } from './HeaderControls';
-import { AgentMessages } from './AgentMessages';
-import { AgentChatInput } from './AgentChatInput';
-import { useAgentSessionPolling } from './hooks/useAgentSessionPolling';
-import { getAgentSessionEvents } from '~/lib/actions/agentSession';
+import React, { useEffect, useState } from "react";
+import classNames from "classnames";
+import { useStore } from "@nanostores/react";
+import { aiSidebarStore } from "~/lib/stores/aiSidebar";
+import { HeaderControls } from "./HeaderControls";
+import { AgentMessages } from "./AgentMessages";
+import { AgentChatInput } from "./AgentChatInput";
+import { useAgentSessionPolling } from "./hooks/useAgentSessionPolling";
+import { getAgentSessionEvents } from "~/lib/actions/agentSession";
 
 export const AISidebar = ({
   className,
@@ -24,6 +24,9 @@ export const AISidebar = ({
   const rawEvents = useStore(aiSidebarStore.events);
   const currentWorkspaceId = useStore(aiSidebarStore.currentWorkspaceId);
   const currentSessionId = useStore(aiSidebarStore.currentSessionId);
+  const productLabSimulationId = useStore(
+    aiSidebarStore.productLabSimulationId,
+  );
   const events = Array.isArray(rawEvents) ? rawEvents : [];
   const [mounted, setMounted] = useState(false);
 
@@ -32,27 +35,44 @@ export const AISidebar = ({
   }, []);
 
   useEffect(() => {
-    if (!currentWorkspaceId) return;
+    if (!currentWorkspaceId || productLabSimulationId) return;
     if (!currentSessionId || events.length === 0) {
-      getAgentSessionEvents(currentWorkspaceId, currentSessionId || undefined).then((res) => {
+      getAgentSessionEvents(
+        currentWorkspaceId,
+        currentSessionId || undefined,
+      ).then((res) => {
         if (res && res.id) {
-          aiSidebarStore.setWorkspace(currentWorkspaceId, res.events || [], res.id, res.title || 'Onboarding');
+          aiSidebarStore.setWorkspace(
+            currentWorkspaceId,
+            res.events || [],
+            res.id,
+            res.title || "Onboarding",
+          );
         }
       });
     }
-  }, [currentWorkspaceId, currentSessionId]);
+  }, [currentWorkspaceId, currentSessionId, productLabSimulationId]);
 
   useAgentSessionPolling(isOpen);
 
   const enableTransition = mounted && !isDragging;
+  const sidebarStyle: React.CSSProperties = {
+    ...style,
+    width: isOpen ? style?.width || "min(420px, 100vw)" : 0,
+    minWidth: isOpen ? style?.minWidth : 0,
+  };
 
   return (
     <div
-      style={style}
+      style={sidebarStyle}
       className={classNames(
-        'flex flex-col h-full bg-white dark:bg-[#212121]  border border-gray-300 dark:border-gray-700 border-t-0 border-b-0 z-50 relative shrink-0',
-        enableTransition ? 'transition-[width,opacity,transform] duration-200' : 'transition-none',
-        isOpen ? 'opacity-100 translate-x-0' : 'w-0 opacity-0 translate-x-full overflow-hidden border-0',
+        "flex flex-col h-full bg-white dark:bg-[#212121] border border-gray-200 dark:border-gray-700 border-t-0 border-b-0 z-50 relative shrink-0",
+        enableTransition
+          ? "transition-[width,opacity,transform] duration-200"
+          : "transition-none",
+        isOpen
+          ? "opacity-100 translate-x-0"
+          : "w-0 opacity-0 translate-x-full overflow-hidden border-0",
         className,
       )}
     >

@@ -22,6 +22,7 @@ import CloudProvidersTab from '~/components/@settings/tabs/providers/cloud/Cloud
 import LocalProvidersTab from '~/components/@settings/tabs/providers/local/LocalProvidersTab';
 import McpTab from '~/components/@settings/tabs/mcp/McpTab';
 import { classNames } from '~/utils/classNames';
+import PetsTab from '~/components/@settings/tabs/pets/PetsTab';
 
 export const InlineSettingsContent = () => {
   const activeTab = useStore(settingsTabStore);
@@ -33,6 +34,7 @@ export const InlineSettingsContent = () => {
       case 'pricing': return <PricingTab />;
       case 'billing': return <BillingTab />;
       case 'settings': return <SettingsTab />;
+      case 'pets': return <PetsTab />;
       case 'notifications': return <NotificationsTab />;
       case 'features': return <FeaturesTab />;
       case 'data': return <DataTab />;

@@ -19,7 +19,11 @@ export type StreamHandlers = {
  *  - other tool calls/results are forwarded to handlers
  * Stream errors are collected (not thrown) so callers can decide what to do.
  */
-export async function consumeAgentStream(res: Response, handlers: StreamHandlers = {}) {
+export async function consumeAgentStream(
+    res: Response,
+    handlers: StreamHandlers = {},
+    requestId?: string,
+) {
     if (!res.body) throw new Error('Empty response body');
 
     const reader = res.body.getReader();
@@ -43,7 +47,7 @@ export async function consumeAgentStream(res: Response, handlers: StreamHandlers
         const visible = text.trimStart();
         if (!textId) {
             textId = v4();
-            aiSidebarStore.addEvent({ id: textId, type: 'text', title: visible, status: 'active' });
+            aiSidebarStore.addEvent({ id: textId, requestId, type: 'text', title: visible, status: 'active' });
         } else {
             aiSidebarStore.updateEvent(textId, { title: visible });
         }

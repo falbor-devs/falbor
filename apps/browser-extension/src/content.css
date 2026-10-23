@@ -1,0 +1,292 @@
+#falbor-automation-banner,
+#falbor-automation-banner * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#falbor-automation-banner {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483000;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  background: #16181d;
+  color: #f4f5f7;
+  border: 1px solid #33363e;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+#falbor-automation-banner .falbor-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+#falbor-automation-banner .falbor-banner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0099ff;
+  flex: 0 0 auto;
+}
+
+#falbor-automation-banner .falbor-banner-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+#falbor-automation-banner .falbor-banner-meta {
+  color: #aeb4c0;
+  font-size: 12px;
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+
+#falbor-automation-banner .falbor-banner-instructions {
+  color: #d9dce3;
+  margin-bottom: 8px;
+}
+
+#falbor-automation-banner .falbor-banner-status {
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #1e2128;
+  border: 1px solid #2c3038;
+  color: #d9dce3;
+  overflow-wrap: anywhere;
+}
+
+#falbor-automation-banner .falbor-status-success {
+  border-color: #1f7a4d;
+  color: #7ee2ae;
+}
+
+#falbor-automation-banner .falbor-status-error {
+  border-color: #8c2f2f;
+  color: #ff9d9d;
+}
+
+#falbor-automation-banner .falbor-status-warning {
+  border-color: #8a6414;
+  color: #ffce6b;
+}
+
+#falbor-automation-banner .falbor-banner-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#falbor-automation-banner .falbor-banner-button {
+  appearance: none;
+  border: 1px solid #3a3e47;
+  background: #23262d;
+  color: #e8eaee;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#falbor-automation-banner .falbor-banner-button:hover {
+  background: #2b2f37;
+}
+
+#falbor-automation-banner .falbor-banner-danger {
+  border-color: #7a2f2f;
+  color: #ffb4b4;
+}
+
+#falbor-automation-banner .falbor-banner-danger:hover {
+  background: #3a2222;
+}
+
+/* --- Autonomous agent overlay -------------------------------------------- */
+
+#falbor-agent-overlay,
+#falbor-agent-overlay * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+#falbor-agent-overlay {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483100;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  background: #16181d;
+  color: #f4f5f7;
+  border: 1px solid #33363e;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+#falbor-agent-overlay .falbor-agent-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#falbor-agent-overlay .falbor-agent-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+  flex: 0 0 auto;
+}
+
+#falbor-agent-overlay .falbor-agent-dot[data-state="running"] {
+  background: #34d399;
+}
+
+#falbor-agent-overlay .falbor-agent-dot[data-state="paused"] {
+  background: #fbbf24;
+}
+
+#falbor-agent-overlay .falbor-agent-dot[data-state="error"] {
+  background: #f87171;
+}
+
+#falbor-agent-overlay .falbor-agent-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+#falbor-agent-overlay .falbor-agent-status {
+  margin-left: auto;
+  color: #aeb4c0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#falbor-agent-overlay .falbor-agent-rows {
+  display: grid;
+  grid-template-columns: 86px 1fr;
+  gap: 4px 8px;
+  margin-bottom: 8px;
+}
+
+#falbor-agent-overlay .falbor-agent-rows dt {
+  color: #7d8492;
+  font-size: 11px;
+}
+
+#falbor-agent-overlay .falbor-agent-rows dd {
+  color: #d9dce3;
+  overflow-wrap: anywhere;
+}
+
+#falbor-agent-overlay .falbor-agent-error {
+  color: #ff9d9d;
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+
+#falbor-agent-overlay .falbor-agent-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+#falbor-agent-overlay .falbor-agent-actions button {
+  appearance: none;
+  border: 1px solid #3a3e47;
+  background: #23262d;
+  color: #e8eaee;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#falbor-agent-overlay .falbor-agent-actions button:hover:not(:disabled) {
+  background: #2b2f37;
+}
+
+#falbor-agent-overlay .falbor-agent-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+#falbor-agent-overlay #falbor-agent-stop {
+  border-color: #7a2f2f;
+  color: #ffb4b4;
+}
+
+#falbor-agent-overlay #falbor-agent-stop:hover:not(:disabled) {
+  background: #3a2222;
+}
+
+#falbor-agent-pointer {
+  position: absolute;
+  z-index: 2147483200;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #0099ff;
+  background: rgba(224, 54, 2, 0.18);
+  box-shadow: 0 0 0 4px rgba(224, 54, 2, 0.15);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity 120ms ease;
+}
+
+#falbor-agent-pointer.falbor-agent-pointer-visible {
+  opacity: 1;
+}
+
+#falbor-scroll-cue {
+  position: fixed;
+  left: 50%;
+  bottom: 48px;
+  transform: translateX(-50%) translateY(8px);
+  z-index: 2147483200;
+  background: rgba(22, 24, 29, 0.92);
+  color: #f4f5f7;
+  border: 1px solid #33363e;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+#falbor-scroll-cue.falbor-scroll-cue-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.falbor-agent-highlight {
+  outline: 2px solid #0099ff !important;
+  outline-offset: 2px !important;
+  border-radius: 8px;
+  box-shadow: 0 0 0 6px rgba(224, 54, 2, 0.18) !important;
+  transition: outline-color 120ms ease;
+}
