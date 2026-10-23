@@ -1430,7 +1430,7 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                           </Link>
                         );
                       })()}
-                      {(() => {
+                      {/* {(() => {
                         const activeWsId = pathname?.split("/")[2];
                         const href = activeWsId
                           ? `/workspace/${activeWsId}/product-lab`
@@ -1451,7 +1451,7 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                             Agent Network
                           </Link>
                         );
-                      })()}
+                      })()} */}
                       {(() => {
                         const activeWsId = pathname?.split("/")[2];
                         const href = activeWsId

@@ -11,6 +11,7 @@ type AnimationHistory = {
   prompt: string;
   duration: number;
   includeBackground: boolean;
+  status: string;
   createdAt: string;
 };
 
@@ -31,6 +32,7 @@ export function WorkspaceAdsAnimationView({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [history, setHistory] = useState<AnimationHistory[]>([]);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
 
   const loadHistory = async () => {
     const response = await fetch(
@@ -42,6 +44,47 @@ export function WorkspaceAdsAnimationView({
   useEffect(() => {
     void loadHistory();
   }, [workspaceId, animationId]);
+
+  useEffect(() => {
+    const pendingJob = history.find((item) =>
+      ["pending", "in_progress"].includes(item.status),
+    );
+    if (pendingJob) setActiveJobId(pendingJob.providerJobId);
+  }, [history]);
+
+  useEffect(() => {
+    if (!activeJobId) return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const response = await fetch(
+          `/api/workspace/${workspaceId}/ads-marketing/playgrounds/animation?jobId=${encodeURIComponent(activeJobId)}&status=1`,
+        );
+        const data = await response.json();
+        if (cancelled) return;
+        if (!response.ok) throw new Error(data.error || "Unable to check animation status.");
+        if (data.status === "completed" && data.videoUrl) {
+          setVideoUrl(data.videoUrl);
+          setActiveJobId(null);
+          await loadHistory();
+          return;
+        }
+        if (["failed", "cancelled", "expired"].includes(data.status)) {
+          setError(data.error || `Animation generation ${data.status}.`);
+          setActiveJobId(null);
+          await loadHistory();
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to check animation status.");
+      }
+    };
+    void poll();
+    const interval = window.setInterval(() => void poll(), 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [activeJobId, workspaceId]);
 
   const readImage = (file?: File) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -71,13 +114,10 @@ export function WorkspaceAdsAnimationView({
         },
       );
       const data = await response.json();
-      if (!response.ok)
+      if (!response.ok && response.status !== 202)
         throw new Error(data.error || "Animation generation failed.");
-      if (!data.videoUrl)
-        throw new Error(
-          "Your animation was queued by the video provider. Please try again shortly to retrieve it.",
-        );
-      setVideoUrl(data.videoUrl);
+      if (data.jobId) setActiveJobId(data.jobId);
+      if (data.videoUrl) setVideoUrl(data.videoUrl);
       await loadHistory();
     } catch (err) {
       setError(
@@ -203,7 +243,7 @@ export function WorkspaceAdsAnimationView({
                       </span>
                       <span className="mt-1 flex items-center justify-between gap-2 text-[10px] text-gray-500">
                         <span>
-                          {item.duration}s ·{" "}
+                          {item.duration}s · {item.status} ·{" "}
                           {new Date(item.createdAt).toLocaleString()}
                         </span>
                         <a
@@ -235,6 +275,11 @@ export function WorkspaceAdsAnimationView({
                 src={videoUrl}
                 controls
                 autoPlay
+                onError={() =>
+                  setError(
+                    "The animation was generated, but the video could not be played. Try downloading the MP4 and opening it locally.",
+                  )
+                }
                 className="max-h-full max-w-full rounded-xl"
               />
             ) : image ? (
@@ -265,7 +310,9 @@ export function WorkspaceAdsAnimationView({
             />
             <div className="flex items-center justify-between">
               <span className="px-2 text-[11px] text-gray-500">
-                {image
+                {activeJobId
+                  ? "Generating animation… This can take a few minutes."
+                  : image
                   ? `${duration}s animation · ${includeBackground ? "with" : "without"} background`
                   : "Add an image first"}
               </span>
