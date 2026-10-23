@@ -679,20 +679,6 @@ export const AgentMessages = ({ events, isActive }: { events: AIEvent[]; isActiv
             )}
           </div>
         )}
-        <div className="mt-2 flex items-center gap-2">
-          <video
-            src="/icons/pets/Agent-Loading.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            aria-hidden="true"
-            className="h-16 w-16 shrink-0 rounded-md object-cover"
-          />
-          <TextShimmer>
-            Agent Syncing
-          </TextShimmer>
-        </div>
       </div>
     </div>
   );
