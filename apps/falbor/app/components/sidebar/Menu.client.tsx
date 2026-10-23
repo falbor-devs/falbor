@@ -67,7 +67,6 @@ import Link from "next/link";
 import { SkillsDialog } from "../skills/SkillsDialog";
 import { aiSidebarStore } from "~/lib/stores/aiSidebar";
 import { BILLING_CONFIG, type PlanId } from "~/lib/billing/config";
-import { Lightbulb, Target } from "lucide-react";
 
 const squareMenuVariants = {
   closed: {
@@ -111,6 +110,93 @@ type DialogContent =
   | { type: "delete"; item: ChatHistoryItem }
   | { type: "bulkDelete"; items: ChatHistoryItem[] }
   | null;
+
+function SidebarIconVideo({
+  src,
+  className = "h-4 w-4",
+}: {
+  src: string;
+  className?: string;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [hovered, setHovered] = useState(false);
+  const darkIcon = {
+    "/icons/sidebar/agent.mp4": "i-ph:sparkle-fill text-blue-500",
+    "/icons/sidebar/channle.mp4": "i-ph:hash",
+    "/icons/sidebar/comittors.mp4": "i-ph:sword",
+    "/icons/sidebar/folder.mp4": "i-ph:folder",
+    "/icons/sidebar/goal.mp4": "i-ph:target",
+    "/icons/sidebar/home.mp4": "i-ph:house",
+    "/icons/sidebar/image-AD.mp4": "i-ph:image",
+    "/icons/sidebar/mentions.mp4": "i-ph:at",
+    "/icons/sidebar/sources.mp4": "i-ph:newspaper",
+  }[src];
+
+  const pause = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.pause();
+    video.currentTime = 0;
+  }, []);
+
+  const play = useCallback(() => {
+    void videoRef.current?.play();
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const control = video?.closest("a, button");
+    if (!control) return;
+
+    const handleEnter = () => {
+      setHovered(true);
+      play();
+    };
+    const handleLeave = () => {
+      setHovered(false);
+      pause();
+    };
+
+    control.addEventListener("pointerenter", handleEnter);
+    control.addEventListener("pointerleave", handleLeave);
+
+    return () => {
+      control.removeEventListener("pointerenter", handleEnter);
+      control.removeEventListener("pointerleave", handleLeave);
+    };
+  }, [pause, play]);
+
+  const iconMotionClass = hovered
+    ? "scale-[1.85] -translate-y-2"
+    : "scale-100 translate-y-0";
+
+  return (
+    <>
+      <span
+        className={`dark:hidden ${className} inline-flex origin-bottom rounded-md relative z-10 transform-gpu transition-transform duration-150 ease-out ${iconMotionClass}`}
+      >
+        <video
+          ref={videoRef}
+          aria-hidden="true"
+          loop
+          muted
+          playsInline
+          preload="auto"
+          onLoadedData={pause}
+          className="pointer-events-none h-full w-full shrink-0 object-cover object-center"
+        >
+          <source src={src} type="video/mp4" />
+        </video>
+      </span>
+      {darkIcon && (
+        <span
+          aria-hidden="true"
+          className={`hidden dark:inline-flex ${className} relative z-10 origin-bottom transform-gpu transition-transform duration-150 ease-out ${iconMotionClass} ${darkIcon}`}
+        />
+      )}
+    </>
+  );
+}
 
 function CurrentDateTime() {
   const [dateTime, setDateTime] = useState(new Date());
@@ -724,12 +810,12 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
           variant === "square"
             ? classNames(
               "border-r border-gray-200 dark:border-[#26262b] flex selection-accent flex-col side-menu h-full overflow-hidden shrink-0 text-sm",
-              "absolute md:relative left-0 top-0 bottom-0 bg-white dark:bg-[#1A1A1A] md:bg-transparent shadow-xl md:shadow-none z-50 md:z-sidebar",
+              "absolute md:relative left-0 top-0 bottom-0 bg-[#F9F9F9] dark:bg-[#1A1A1A] shadow-xl md:shadow-none z-50 md:z-sidebar",
               !open &&
               "max-md:!w-0 max-md:!opacity-0 max-md:!p-0 pointer-events-none md:pointer-events-auto",
             )
             : classNames(
-              "border-r border-gray-200 dark:border-[#26262b] flex selection-accent flex-col side-menu shrink-0 h-full bg-white dark:bg-[#1A1A1A] text-sm",
+              "border-r border-gray-200 dark:border-[#26262b] flex selection-accent flex-col side-menu shrink-0 h-full bg-[#F9F9F9] dark:bg-[#1A1A1A] text-sm",
 
               "max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50 max-md:shadow-xl",
               !open &&
@@ -984,9 +1070,12 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                       side="bottom"
                       sideOffset={4}
                       trigger={
-                        <button className="flex items-center justify-between w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-900 px-2.5 py-1.5 rounded-md focus:outline-none text-xs text-gray-900 dark:text-gray-100 font-medium transition-colors border border-gray-200/50 dark:border-gray-800/50">
+                        <button className="flex items-center justify-between w-full overflow-visible hover:bg-[#EBEBEB] dark:hover:bg-gray-900 px-2.5 py-1.5 rounded-md focus:outline-none text-xs text-gray-900 dark:text-gray-100 font-medium transition-colors border border-gray-200/50 dark:border-gray-800/50">
                           <div className="flex items-center gap-2 truncate">
-                            <div className="i-ph:folder w-3.5 h-3.5 shrink-0" />
+                            <SidebarIconVideo
+                              src="/icons/sidebar/folder.mp4"
+                              className="h-5 w-5"
+                            />
                             <span className="truncate">My Workspace</span>
                           </div>
                           <div className="i-ph:caret-down w-3 h-3 text-gray-400 shrink-0 ml-1" />
@@ -1009,13 +1098,16 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                                   router.push(`/workspace/${ws.id}`)
                                 }
                                 className={classNames(
-                                  "flex items-center justify-between px-2 py-1.5 rounded-md text-xs cursor-pointer",
+                                  "flex items-center justify-between overflow-visible px-2 py-1.5 rounded-md text-xs cursor-pointer",
                                   isCurrent &&
                                   "bg-[#0099ff]/20 text-gray-900 font-medium",
                                 )}
                               >
                                 <div className="flex items-center gap-2 truncate">
-                                  <div className="i-ph:folder w-3.5 h-3.5 text-gray-900 shrink-0" />
+                                  <SidebarIconVideo
+                                    src="/icons/sidebar/folder.mp4"
+                                    className="h-5 w-5"
+                                  />
                                   <span className="truncate">{ws.name}</span>
                                 </div>
                                 {isCurrent && (
@@ -1181,7 +1273,10 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                                 : "text-gray-900 dark:text-gray-100",
                             )}
                           >
-                            <div className="i-ph:house w-4 h-4 mr-2" />
+                            <SidebarIconVideo
+                              src="/icons/sidebar/home.mp4"
+                              className="mr-2 h-6 w-6"
+                            />
                             Overview
                           </Link>
                         );
@@ -1219,7 +1314,10 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                                   : "text-gray-900 dark:text-gray-100",
                               )}
                             >
-                              <div className="i-ph:newspaper w-4 h-4 mr-2" />
+                              <SidebarIconVideo
+                                src="/icons/sidebar/sources.mp4"
+                                className="mr-2 h-6 w-6"
+                              />
                               Sources
                             </button>
                             {isSourcesOpen && (
@@ -1227,13 +1325,16 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                                 <Link
                                   href={channelsHref}
                                   className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
+                                    "group flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     isChannelsActive
                                       ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
                                       : "text-gray-900 dark:text-gray-100",
                                   )}
                                 >
-                                  <div className="i-ph:hash w-3.5 h-3.5 mr-2" />
+                                    <SidebarIconVideo
+                                      src="/icons/sidebar/channle.mp4"
+                                      className="mr-2 h-6 w-6"
+                                  />
                                   Channels
                                 </Link>
                                 <Link
@@ -1246,7 +1347,10 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                                   )}
                                 >
                                   <div className="flex items-center">
-                                    <div className="i-ph:at w-3.5 h-3.5 mr-2" />
+                                    <SidebarIconVideo
+                                      src="/icons/sidebar/mentions.mp4"
+                                      className="mr-2 h-6 w-6"
+                                    />
                                     Mentions
                                   </div>
                                   {unreadMentionsCount > 0 &&
@@ -1259,13 +1363,16 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                                 <Link
                                   href={competitorsHref}
                                   className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
+                                    "group flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     isCompetitorsActive
                                       ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
                                       : "text-gray-900 dark:text-gray-100",
                                   )}
                                 >
-                                  <div className="i-ph:sword w-3.5 h-3.5 mr-2" />
+                                  <SidebarIconVideo
+                                    src="/icons/sidebar/comittors.mp4"
+                                    className="mr-2 h-6 w-6"
+                                  />
                                   Competitors
                                 </Link>
                               </div>
@@ -1319,7 +1426,10 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                               onClick={toggleContactsOpen}
                               className="flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors text-gray-900 dark:text-gray-100"
                             >
-                              <div className="i-ph:users-three w-3.5 h-3.5 mr-2" />
+                              <SidebarIconVideo
+                                  src="/icons/sidebar/contacts.mp4"
+                                    className="mr-2 h-6 w-6"
+                                  />
                               Contacts
                             </button>
                             {isContactsOpen && (
@@ -1327,11 +1437,11 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                                 <Link
                                   href={aiProspectsHref}
                                   className={classNames(
-                                    "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
+                                    "group flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-2.5 py-1.5 rounded-md focus:outline-none text-xs font-medium transition-colors",
                                     isAiProspectsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
                                   )}
                                 >
-                                  <div className="i-ph:sparkle w-3.5 h-3.5 mr-2" />
+                                  <div className="i-ph:sparkle w-3.5 h-3.5 mr-2 relative z-10 origin-bottom transform-gpu transition-transform duration-150 ease-out group-hover:scale-[1.85] group-hover:-translate-y-2" />
                                   Discovery
                                 </Link>
                                 <Link
@@ -1341,8 +1451,10 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                                     isMyProspectsActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
                                   )}
                                 >
-                                  <div className="i-ph:users-three w-3.5 h-3.5 mr-2" />
-                                  Leads
+                                  <SidebarIconVideo
+                                    src="/icons/sidebar/contacts.mp4"
+                                    className="mr-2 h-6 w-6"
+                                  />                                  Leads
                                 </Link>
                               </div>
                             )}
@@ -1358,7 +1470,7 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                           <Link
                             href={href}
                             className={classNames(
-                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1",
+                              "group flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1",
                               isVibeActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
                             )}
                           >
@@ -1425,7 +1537,10 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                                 : "text-gray-900 dark:text-gray-100",
                             )}
                           >
-                            <div className="i-ph:sparkle-fill w-4 h-4 mr-2 text-blue-500" />
+                            <SidebarIconVideo
+                              src="/icons/sidebar/agent.mp4"
+                              className="mr-2 h-6 w-6"
+                            />
                             Agents
                           </Link>
                         );
@@ -1469,7 +1584,10 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                                 : "text-gray-900 dark:text-gray-100",
                             )}
                           >
-                            <div className="i-ph:image w-4 h-4 mr-2" />
+                            <SidebarIconVideo
+                              src="/icons/sidebar/image-AD.mp4"
+                              className="mr-2 h-5 w-5"
+                            />
                             Image ADs
                           </Link>
                         );
@@ -1478,13 +1596,29 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                         const activeWsId = pathname?.split("/")[2];
                         const href = activeWsId ? `/workspace/${activeWsId}/demand-capture` : "/";
                         const active = pathname?.includes("/demand-capture");
-                        return <Link href={href} className={classNames("flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1", active ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100")}><Target className="mr-2 h-4 w-4" aria-hidden="true" />Growth Opportunities</Link>;
+                        return (
+                          <Link
+                            href={href}
+                            className={classNames(
+                              "flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1",
+                              active
+                                ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white"
+                                : "text-gray-900 dark:text-gray-100",
+                            )}
+                          >
+                            <SidebarIconVideo
+                              src="/icons/sidebar/goal.mp4"
+                              className="mr-2 h-5 w-5"
+                            />
+                            Growth Opportunities
+                          </Link>
+                        );
                       })()}
                       {/* {(() => {
                         const activeWsId = pathname?.split("/")[2];
                         const href = activeWsId ? `/workspace/${activeWsId}/feature-intelligence` : "/";
                         const active = pathname?.includes("/feature-intelligence");
-                        return <Link href={href} className={classNames("flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1", active ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100")}><Lightbulb className="mr-2 h-4 w-4" aria-hidden="true" />Feature Intelligence</Link>;
+                        return <Link href={href} className={classNames("flex items-center justify-start w-full hover:bg-[#EBEBEB] dark:hover:bg-gray-800 relative px-3 py-2 rounded-lg focus:outline-none text-sm font-medium transition-colors mt-1", active ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100")}><div className="i-ph:lightbulb mr-2 h-4 w-4" aria-hidden="true" />Feature Intelligence</Link>;
                       })()} */}
                       {(() => {
                         const activeWsId = pathname?.split('/')[2];
@@ -1498,10 +1632,10 @@ export const Menu = ({ variant = "full" }: MenuProps) => {
                               isAutomationActive ? "bg-[#EBEBEB] dark:bg-gray-800 dark:text-white" : "text-gray-900 dark:text-gray-100"
                             )}
                           >
-                            <div className="i-ph:robot w-4 h-4 mr-2" />
+                            <div className="i-ph:robot w-4 h-4 w-3.5 h-3.5 mr-2 relative z-10 origin-bottom transform-gpu transition-transform duration-150 ease-out group-hover:scale-[1.85] group-hover:-translate-y-2" />
                             Reddit Automation <Badge className="ml-2 !rounded-md bg-[#0099ff]/20 text-[#0099ff]">Beta</Badge>
                           </Link>
-                        );
+                        );  
                       })()}
                       {/* {(() => {
                         const activeWsId = pathname?.split('/')[2];
