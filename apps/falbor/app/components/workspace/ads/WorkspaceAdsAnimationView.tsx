@@ -4,7 +4,47 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dropdown, DropdownItem } from "~/components/ui/Dropdown";
 
-const durations = [4, 6, 8];
+const durations = [2, 4, 6, 8];
+const videoModels = [
+  {
+    id: "alibaba/wan-3.0",
+    name: "Wan 3.0",
+    detail: "Low cost · supports 2 seconds",
+    minimumDuration: 2,
+  },
+  {
+    id: "bytedance/seedance-2.0-fast",
+    name: "Seedance 2.0 Fast",
+    detail: "Fast motion · low cost",
+    minimumDuration: 4,
+  },
+  {
+    id: "google/veo-3.1-lite",
+    name: "Veo 3.1 Lite",
+    detail: "Higher fidelity · 4–8 seconds",
+    minimumDuration: 4,
+  },
+  {
+    id: "mage:ltx_video:ltx-video-096-distilled",
+    name: "Mage · LTX Video",
+    detail: "Low cost · open-weights video",
+    minimumDuration: 2,
+  },
+];
+const designs = [
+  {
+    id: "pixel",
+    name: "Pixel game",
+    detail: "Crisp, game-like motion",
+    preview: "/icons/pets/Image2.png",
+  },
+  {
+    id: "realistic",
+    name: "Realistic",
+    detail: "Natural lighting and movement",
+    preview: null,
+  },
+];
 type AnimationHistory = {
   id: string;
   providerJobId: string;
@@ -26,24 +66,71 @@ export function WorkspaceAdsAnimationView({
   const inputRef = useRef<HTMLInputElement>(null);
   const [image, setImage] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
-  const [duration, setDuration] = useState(8);
-  const [includeBackground, setIncludeBackground] = useState(true);
+  const [duration, setDuration] = useState(2);
+  const [includeBackground, setIncludeBackground] = useState(false);
+  const [model, setModel] = useState(videoModels[0].id);
+  const [design, setDesign] = useState("pixel");
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [history, setHistory] = useState<AnimationHistory[]>([]);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  const settingsKey = `falbor:animation-settings:${workspaceId}:${animationId}`;
 
   const loadHistory = async () => {
     const response = await fetch(
       `/api/workspace/${workspaceId}/ads-marketing/playgrounds/animation?animationId=${encodeURIComponent(animationId)}`,
     );
-    if (response.ok) setHistory((await response.json()).history || []);
+    if (!response.ok) return;
+    const nextHistory = (await response.json()).history || [];
+    setHistory(nextHistory);
+    const latest = nextHistory[0] as AnimationHistory | undefined;
+    if (latest?.status === "completed") {
+      setVideoUrl(
+        `/api/workspace/${workspaceId}/ads-marketing/playgrounds/animation?jobId=${encodeURIComponent(latest.providerJobId)}`,
+      );
+    }
   };
 
   useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(settingsKey);
+      if (saved) {
+        const settings = JSON.parse(saved) as {
+          duration?: number;
+          model?: string;
+          design?: string;
+          includeBackground?: boolean;
+        };
+        if ([2, 4, 6, 8].includes(settings.duration || 0)) {
+          setDuration(settings.duration as number);
+        }
+        if (videoModels.some((item) => item.id === settings.model)) {
+          setModel(settings.model as string);
+        }
+        if (designs.some((item) => item.id === settings.design)) {
+          setDesign(settings.design as string);
+        }
+        if (typeof settings.includeBackground === "boolean") {
+          setIncludeBackground(settings.includeBackground);
+        }
+      }
+    } catch {
+      window.localStorage.removeItem(settingsKey);
+    }
+    setSettingsLoaded(true);
     void loadHistory();
-  }, [workspaceId, animationId]);
+  }, [settingsKey]);
+
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    window.localStorage.setItem(
+      settingsKey,
+      JSON.stringify({ duration, model, design, includeBackground }),
+    );
+  }, [settingsLoaded, settingsKey, duration, model, design, includeBackground]);
 
   useEffect(() => {
     const pendingJob = history.find((item) =>
@@ -86,6 +173,24 @@ export function WorkspaceAdsAnimationView({
     };
   }, [activeJobId, workspaceId]);
 
+  const selectDuration = (value: number) => {
+    if (value === 2) {
+      const selectedModel = videoModels.find((item) => item.id === model);
+      if (selectedModel && selectedModel.minimumDuration > 2) {
+        setModel("alibaba/wan-3.0");
+      }
+    }
+    setDuration(value);
+  };
+
+  const selectModel = (value: string) => {
+    const selectedModel = videoModels.find((item) => item.id === value);
+    if (selectedModel && duration < selectedModel.minimumDuration) {
+      setDuration(selectedModel.minimumDuration);
+    }
+    setModel(value);
+  };
+
   const readImage = (file?: File) => {
     if (!file || !file.type.startsWith("image/")) return;
     const reader = new FileReader();
@@ -94,7 +199,7 @@ export function WorkspaceAdsAnimationView({
   };
 
   const send = async () => {
-    if (!image || !prompt.trim() || busy) return;
+    if (!image || !prompt.trim() || busy || activeJobId) return;
     setBusy(true);
     setError("");
     setVideoUrl(null);
@@ -109,6 +214,8 @@ export function WorkspaceAdsAnimationView({
             prompt,
             duration,
             includeBackground,
+            model,
+            design,
             animationId,
           }),
         },
@@ -195,8 +302,94 @@ export function WorkspaceAdsAnimationView({
             >
               <div className="p-1">
                 {durations.map((value) => (
-                  <DropdownItem key={value} onSelect={() => setDuration(value)}>
+                  <DropdownItem
+                    key={value}
+                    onSelect={() => selectDuration(value)}
+                  >
                     {value} seconds
+                  </DropdownItem>
+                ))}
+              </div>
+            </Dropdown>
+          </div>
+          <div className="mt-4">
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+              Design
+            </label>
+            <Dropdown
+              trigger={
+                <button
+                  type="button"
+                  className="mt-2 flex w-full items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-left text-sm text-gray-900 dark:border-gray-800 dark:text-white"
+                >
+                  <span>
+                    {designs.find((item) => item.id === design)?.name}
+                  </span>
+                  <i className="i-ph:caret-up-down" />
+                </button>
+              }
+              side="bottom"
+              align="start"
+            >
+              <div className="min-w-56 p-1">
+                {designs.map((item) => (
+                  <DropdownItem
+                    key={item.id}
+                    onSelect={() => setDesign(item.id)}
+                  >
+                    <span className="flex items-center gap-2">
+                      {item.preview ? (
+                        <img
+                          src={item.preview}
+                          alt=""
+                          className="h-8 w-8 rounded-md object-contain"
+                        />
+                      ) : (
+                        <span className="h-8 w-8 rounded-md bg-gray-200 dark:bg-gray-800" />
+                      )}
+                      <span className="flex flex-col items-start">
+                      <span>{item.name}</span>
+                      <span className="text-[10px] text-gray-500">
+                        {item.detail}
+                      </span>
+                      </span>
+                    </span>
+                  </DropdownItem>
+                ))}
+              </div>
+            </Dropdown>
+          </div>
+          <div className="mt-4">
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+              Model
+            </label>
+            <Dropdown
+              trigger={
+                <button
+                  type="button"
+                  className="mt-2 flex w-full items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-left text-sm text-gray-900 dark:border-gray-800 dark:text-white"
+                >
+                  <span>
+                    {videoModels.find((item) => item.id === model)?.name}
+                  </span>
+                  <i className="i-ph:caret-up-down" />
+                </button>
+              }
+              side="bottom"
+              align="start"
+            >
+              <div className="min-w-56 p-1">
+                {videoModels.map((item) => (
+                  <DropdownItem
+                    key={item.id}
+                    onSelect={() => selectModel(item.id)}
+                  >
+                    <span className="flex flex-col items-start">
+                      <span>{item.name}</span>
+                      <span className="text-[10px] text-gray-500">
+                        {item.detail}
+                      </span>
+                    </span>
                   </DropdownItem>
                 ))}
               </div>
@@ -224,6 +417,7 @@ export function WorkspaceAdsAnimationView({
               <div className="max-h-64 space-y-2 overflow-y-auto">
                 {history.map((item) => {
                   const itemVideoUrl = `/api/workspace/${workspaceId}/ads-marketing/playgrounds/animation?jobId=${encodeURIComponent(item.providerJobId)}`;
+                  const itemDownloadUrl = `${itemVideoUrl}&download=1`;
                   return (
                     <div
                       key={item.id}
@@ -247,12 +441,16 @@ export function WorkspaceAdsAnimationView({
                           {new Date(item.createdAt).toLocaleString()}
                         </span>
                         <a
-                          href={itemVideoUrl}
+                          href={itemDownloadUrl}
                           download={`falbor-animation-${item.id}.mp4`}
-                          onClick={(event) => event.stopPropagation()}
+                          aria-disabled={item.status !== "completed"}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (item.status !== "completed") event.preventDefault();
+                          }}
                           title="Download MP4"
                           aria-label="Download animation as MP4"
-                          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white"
+                          className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-white ${item.status !== "completed" ? "cursor-not-allowed opacity-40" : ""}`}
                         >
                           <i className="i-ph:download-simple text-sm" />
                         </a>
@@ -270,7 +468,19 @@ export function WorkspaceAdsAnimationView({
         </aside>
         <main className="relative flex min-h-0 flex-1 flex-col p-5">
           <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-2xl border border-gray-200 bg-gray-50/50 p-5 dark:border-gray-800 dark:bg-gray-900/20">
-            {videoUrl ? (
+            {activeJobId ? (
+              <div className="flex flex-col items-center justify-center text-center text-gray-500">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950">
+                  <i className="i-ph:spinner-gap animate-spin text-3xl text-purple-500" />
+                </div>
+                <p className="mt-4 text-sm font-medium text-gray-900 dark:text-white">
+                  Generating your animation
+                </p>
+                <p className="mt-1 max-w-xs text-xs">
+                  The preview will appear here when the video is ready.
+                </p>
+              </div>
+            ) : videoUrl ? (
               <video
                 src={videoUrl}
                 controls
@@ -318,11 +528,11 @@ export function WorkspaceAdsAnimationView({
               </span>
               <button
                 type="button"
-                disabled={!image || !prompt.trim() || busy}
+                disabled={!image || !prompt.trim() || busy || Boolean(activeJobId)}
                 onClick={send}
                 className="flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-gray-900"
               >
-                {busy ? (
+                {busy || activeJobId ? (
                   <i className="i-ph:spinner-gap animate-spin" />
                 ) : (
                   <i className="i-ph:paper-plane-right" />
