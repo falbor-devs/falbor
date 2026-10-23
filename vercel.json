@@ -6,7 +6,7 @@
   "crons": [
     {
       "path": "/api/cron/agents",
-      "schedule": "0 0 * * *"
+      "schedule": "0 1 * * *"
     }
   ]
 }
