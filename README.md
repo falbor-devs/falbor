@@ -37,7 +37,7 @@
 Navigate to the Falbor app directory and install dependencies:
 
 ```bash
-git clone [https://github.com/falbor-devs/falbor.git](https://github.com/falbor-devs/falbor.git)
+git clone https://github.com/falbor-devs/falbor.git
 cd falbor/apps/falbor
 npm install
 ```
